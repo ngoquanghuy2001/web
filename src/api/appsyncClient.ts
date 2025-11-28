@@ -1,22 +1,37 @@
-export interface Todo {
-  id: string;
-  title: string;
-  completed: boolean;
+export interface SensorData {
+  DevAddr?: number;
+  timestamp?: string;
+  co2?: number;
+  battery?: number;
+  fire?: boolean;
+  humidity?: number;
+  maxT?: number;
+  temperature?: number;
 }
 
-// Ví dụ dùng fetch thuần. Thay URL = endpoint AppSync của bạn
+// Endpoint AppSync của bạn (giữ nguyên)
 const APPSYNC_URL =
   "https://yuxnxoklonbarnboiyirs233we.appsync-api.ap-southeast-2.amazonaws.com/graphql";
 
-export async function getTodos(jwt: string): Promise<Todo[]> {
+/**
+ * Gọi query getNodeData từ AppSync bằng JWT Cognito
+ */
+export async function getNodeData(
+  jwt: string,
+  devAddr: number,
+  timestamp: string
+): Promise<SensorData | null> {
   const query = /* GraphQL */ `
-    query ListTodos {
-      listTodos {
-        items {
-          id
-          title
-          completed
-        }
+    query GetNodeData($DevAddr: Int!, $timestamp: String!) {
+      getNodeData(DevAddr: $DevAddr, timestamp: $timestamp) {
+        DevAddr
+        timestamp
+        co2
+        battery
+        fire
+        humidity
+        maxT
+        temperature
       }
     }
   `;
@@ -25,22 +40,31 @@ export async function getTodos(jwt: string): Promise<Todo[]> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: jwt, // AppSync + Cognito User Pool: dùng idToken
+      // AppSync auth = AMAZON_COGNITO_USER_POOLS nên dùng JWT ở Authorization
+      Authorization: jwt,
     },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({
+      query,
+      variables: {
+        DevAddr: devAddr,
+        timestamp,
+      },
+    }),
   });
 
   if (!res.ok) {
     const text = await res.text();
+    console.error("AppSync HTTP error:", res.status, text);
     throw new Error(`AppSync error: ${res.status} - ${text}`);
   }
 
   const json = await res.json();
+  console.log("AppSync raw response:", json);
 
   if (json.errors) {
     console.error("GraphQL errors", json.errors);
     throw new Error(json.errors[0]?.message ?? "GraphQL error");
   }
 
-  return json.data.listTodos.items as Todo[];
+  return json.data.getNodeData as SensorData | null;
 }

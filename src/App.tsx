@@ -1,3 +1,4 @@
+// src/App.tsx
 import React, { useEffect, useState } from "react";
 import {
   loginWithHostedUI,
@@ -6,15 +7,22 @@ import {
   logout,
   UserInfo,
 } from "./auth";
-import { getTodos, Todo } from "./api/appsyncClient";
 import Dashboard from "./Dashboard";
+import { SensorData } from "./api/appsyncClient";
+import { generateClient } from "aws-amplify/api";
+
+const client = generateClient();
 
 const App: React.FC = () => {
   const [jwt, setJwt] = useState<string | null>(null);
   const [user, setUser] = useState<UserInfo | null>(null);
-  const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [sensorData, setSensorData] = useState<SensorData | null>(null);
+  const [sensorLoaded, setSensorLoaded] = useState(false);
+
+  // DevAddr đang nghe realtime (tạm fix cứng, sau này cho nhập từ UI)
+  const devAddr = 3;
 
   // Bước 1: kiểm tra session Cognito
   useEffect(() => {
@@ -59,27 +67,50 @@ const App: React.FC = () => {
     void initAuth();
   }, []);
 
-  // Bước 2: có jwt rồi thì gọi AppSync
+  // Bước 2: subscribe realtime onNodeDataAdded
   useEffect(() => {
     if (!jwt) return;
 
-    const fetchTodos = async () => {
-      try {
-        setLoading(true);
-        setErrorMsg(null);
+    console.log("Đăng ký subscription onNodeDataAdded cho DevAddr:", devAddr);
+    setSensorLoaded(false);
 
-        const items = await getTodos(jwt);
-        setTodos(items);
-      } catch (err: any) {
-        console.error("Error calling AppSync:", err);
-        setErrorMsg(err?.message ?? "Lỗi khi gọi AppSync");
-      } finally {
-        setLoading(false);
+    const subscription = (client.graphql({
+      query: /* GraphQL */ `
+        subscription OnNodeDataAdded($DevAddr: Int!) {
+          onNodeDataAdded(DevAddr: $DevAddr) {
+            co2
+            battery
+            fire
+            humidity
+            maxT
+            temperature
+          }
+        }
+      `,
+      variables: { DevAddr: devAddr },
+    }) as any).subscribe({
+      next: (response: { data?: { onNodeDataAdded?: SensorData } }) => {
+        if (!response.data || !response.data.onNodeDataAdded) {
+          console.warn("Subscription: không có data trong response", response);
+          return;
+        }
+        const newData = response.data.onNodeDataAdded;
+        console.log("Subscription nhận được dữ liệu mới:", newData);
+        setSensorData(newData);
+        setSensorLoaded(true);
+      },
+      error: (error: unknown) => {
+        console.error("Lỗi subscription onNodeDataAdded:", error);
+      },
+    });
+
+    // cleanup khi unmount hoặc khi jwt/devAddr đổi
+    return () => {
+      if (subscription && typeof subscription.unsubscribe === "function") {
+        subscription.unsubscribe();
       }
     };
-
-    void fetchTodos();
-  }, [jwt]);
+  }, [jwt, devAddr]);
 
   const handleLogout = async () => {
     try {
@@ -87,7 +118,8 @@ const App: React.FC = () => {
     } finally {
       setJwt(null);
       setUser(null);
-      setTodos([]);
+      setSensorData(null);
+      setSensorLoaded(false);
     }
   };
 
@@ -120,29 +152,22 @@ const App: React.FC = () => {
           marginBottom: 24,
         }}
       >
-        <h1>Dashboard (Cognito + AppSync)</h1>
+        <h1>Dashboard (Cognito + AppSync realtime)</h1>
         <button onClick={handleLogout}>Đăng xuất</button>
       </div>
-
-      {user && <Dashboard user={user} onLogout={handleLogout} />}
-
-      {loading && <p>Đang tải Todo từ AppSync...</p>}
 
       {errorMsg && (
         <p style={{ color: "red", marginBottom: 12 }}>Lỗi: {errorMsg}</p>
       )}
 
-      {!loading && !errorMsg && (
-        <>
-          <h2>Danh sách Todo (demo AppSync)</h2>
-          <ul>
-            {todos.map((t) => (
-              <li key={t.id}>
-                {t.title} {t.completed ? "✅" : "⏳"}
-              </li>
-            ))}
-          </ul>
-        </>
+      {user && (
+        <Dashboard
+          user={user}
+          onLogout={handleLogout}
+          sensorData={sensorData}
+          sensorLoaded={sensorLoaded}
+          devAddr={devAddr}
+        />
       )}
     </div>
   );
