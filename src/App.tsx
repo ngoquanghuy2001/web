@@ -12,6 +12,7 @@ import { SensorData } from "./api/appsyncClient";
 import { generateClient } from "aws-amplify/api";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import NodeDetailPage from "./node/NodeDetailPage";
+import { useTranslation } from "react-i18next"; // 🔹 thêm
 
 const client = generateClient();
 
@@ -37,10 +38,12 @@ const getInitialTheme = (): boolean => {
 
 const App: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation(); // 🔹 dùng i18n
+
   const [jwt, setJwt] = useState<string | null>(null);
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorKey, setErrorKey] = useState<string | null>(null); // 🔹 lưu key i18n
 
   const [sensorDataMap, setSensorDataMap] = useState<
     Record<number, SensorData | null>
@@ -189,13 +192,13 @@ const App: React.FC = () => {
   // ============================
   const handleAddNode = (devAddr: number) => {
     if (!Number.isInteger(devAddr) || devAddr <= 0) {
-      alert("DevAddr phải là số nguyên dương.");
+      alert(t("dashboard.addNode.invalidDevAddr")); // 🔹 dùng i18n
       return;
     }
 
     setDevAddrs((prev) => {
       if (prev.includes(devAddr)) {
-        alert(`DevAddr ${devAddr} đã tồn tại trong danh sách.`);
+        alert(t("dashboard.addNode.duplicateDevAddr", { devAddr })); // 🔹
         return prev;
       }
       const updated = [...prev, devAddr];
@@ -241,7 +244,7 @@ const App: React.FC = () => {
     const initAuth = async () => {
       try {
         setLoading(true);
-        setErrorMsg(null);
+        setErrorKey(null);
 
         const token = await getIdToken();
         const info = await getCurrentUserInfo();
@@ -266,7 +269,7 @@ const App: React.FC = () => {
           // chưa login -> redirect sang Cognito
           await loginWithHostedUI();
         } else {
-          setErrorMsg("Không thể lấy token từ Cognito.");
+          setErrorKey("app.errors.cannotGetToken"); // 🔹 lưu key i18n
         }
       } finally {
         setLoading(false);
@@ -360,16 +363,24 @@ const App: React.FC = () => {
   // Render
   // ============================
   if (loading && !jwt) {
-    return <div style={{ padding: 16 }}>Đang kiểm tra phiên đăng nhập...</div>;
+    return (
+      <div style={{ padding: 16 }}>
+        {t("app.loading.checkSession") /* 🔹 i18n */}
+      </div>
+    );
   }
 
   if (!jwt) {
     return (
       <div style={{ padding: 16 }}>
-        {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
-        <p>Bạn chưa đăng nhập.</p>
+        {errorKey && (
+          <p style={{ color: "red" }}>
+            {t(errorKey) /* 🔹 hiển thị message theo key */}
+          </p>
+        )}
+        <p>{t("app.notLoggedIn")}</p>
         <button onClick={() => void loginWithHostedUI()}>
-          Đăng nhập với Cognito
+          {t("app.loginButton")}
         </button>
       </div>
     );

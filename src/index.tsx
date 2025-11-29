@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import awsconfig from "./aws-exports";
 import App from "./App";
 import "./index.css";
+import "./i18n";
 
 Amplify.configure(awsconfig);
 

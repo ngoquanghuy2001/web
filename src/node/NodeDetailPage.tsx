@@ -12,6 +12,7 @@ import {
 
 import { SensorData } from "../api/appsyncClient";
 import { UserInfo } from "../auth";
+import { useTranslation } from "react-i18next"; // 🔹 thêm
 
 interface NodeDetailPageProps {
     user: UserInfo;
@@ -30,6 +31,8 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
     darkMode = true,
     onToggleDarkMode,
 }) => {
+    const { t, i18n } = useTranslation(); // 🔹 dùng i18n
+
     const { devAddr } = useParams<{ devAddr: string }>();
     const devAddrNum = Number(devAddr);
 
@@ -69,29 +72,29 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
 
     const latest = history[0] ?? null;
 
-    const gmail = user.attributes.email ?? "Không có email";
+    const gmail = user.attributes.email ?? t("nodeDetail.noEmail");
     const avatarChar = (user.username || gmail || "U").charAt(0).toUpperCase();
 
     const statCards = useMemo(
         () => [
             {
-                label: "Nhiệt độ hiện tại",
+                label: t("nodeDetail.stats.temperature"),
                 value: latest?.temperature != null ? `${latest.temperature}°C` : "--",
             },
             {
-                label: "Độ ẩm hiện tại",
+                label: t("nodeDetail.stats.humidity"),
                 value: latest?.humidity != null ? `${latest.humidity}%` : "--",
             },
             {
-                label: "CO₂ hiện tại",
+                label: t("nodeDetail.stats.co2"),
                 value: latest?.co2 != null ? `${latest.co2} ppm` : "--",
             },
             {
-                label: "Pin",
+                label: t("nodeDetail.stats.battery"),
                 value: latest?.battery != null ? `${latest.battery}%` : "--",
             },
         ],
-        [latest]
+        [latest, t]
     );
 
     // Dữ liệu cho biểu đồ
@@ -142,6 +145,11 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
     const toggleKnobTransform = darkMode ? "translateX(18px)" : "translateX(0px)";
     const toggleBg = darkMode ? "#22c55e" : "#9ca3af";
 
+    const currentLang = (i18n.language || "vi").split("-")[0] as "vi" | "en";
+
+    const handleChangeLanguage = (lng: "vi" | "en") => {
+        i18n.changeLanguage(lng);
+    };
     // Mở popup báo cáo
     const openReportModal = () => {
         setReportSent(false);
@@ -157,6 +165,16 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
         setIsNodeActionsOpen(false);
         openReportModal();
     };
+
+    const tableHeaders: Array<keyof typeof HEADER_KEYS> = [
+        "battery",
+        "co2",
+        "temperature",
+        "humidity",
+        "maxT",
+        "fire",
+        "timestamp",
+    ];
 
     return (
         <div
@@ -206,12 +224,12 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                             fontSize: 12,
                         }}
                     >
-                        ← Back
+                        ← {t("nodeDetail.back")}
                     </button>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <div>
                             <div style={{ fontSize: 16, fontWeight: 600 }}>
-                                Node {devAddrNum}
+                                {t("nodeDetail.header.nodeTitle", { devAddr: devAddrNum })}
                             </div>
                             <div
                                 style={{
@@ -221,7 +239,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                     letterSpacing: 1,
                                 }}
                             >
-                                Detailed view
+                                {t("nodeDetail.header.subtitle")}
                             </div>
                         </div>
 
@@ -243,7 +261,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                 justifyContent: "center",
                                 paddingBottom: 2,
                             }}
-                            title="Tuỳ chọn"
+                            title={t("nodeDetail.nodeMenu.title")}
                         >
                             ⋮
                         </button>
@@ -271,7 +289,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                         marginBottom: 6,
                                     }}
                                 >
-                                    Hành động với node
+                                    {t("nodeDetail.nodeMenu.header")}
                                 </div>
 
                                 <button
@@ -291,7 +309,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                         cursor: "pointer",
                                     }}
                                 >
-                                    <span>Báo cáo sự cố</span>
+                                    <span>{t("nodeDetail.nodeMenu.reportIncident")}</span>
                                     <span style={{ fontSize: 12, opacity: 0.75 }}>⚠</span>
                                 </button>
                             </div>
@@ -309,7 +327,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                 >
                     <div style={{ textAlign: "right" }}>
                         <div style={{ fontSize: 13, fontWeight: 500 }}>
-                            {user.username || "User"}
+                            {user.username || t("nodeDetail.userDefault")}
                         </div>
                         <div style={{ fontSize: 11, opacity: 0.7 }}>{gmail}</div>
                     </div>
@@ -344,7 +362,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                 position: "absolute",
                                 top: 44,
                                 right: 0,
-                                width: 220,
+                                width: 240,
                                 borderRadius: 16,
                                 border: `1px solid ${cardBorder}`,
                                 backgroundColor: popupBg,
@@ -360,9 +378,67 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                     marginBottom: 8,
                                 }}
                             >
-                                Settings
+                                {t("nodeDetail.settings.header")}
                             </div>
 
+                            {/* 🔹 Language switcher – nằm trên Dark mode */}
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: 8,
+                                    padding: "6px 8px",
+                                    borderRadius: 10,
+                                    marginBottom: 6,
+                                }}
+                            >
+                                <span style={{ fontSize: 13 }}>
+                                    {t("dashboard.settings.language")}
+                                </span>
+                                <div
+                                    style={{
+                                        display: "inline-flex",
+                                        gap: 6,
+                                    }}
+                                >
+                                    {(["vi", "en"] as const).map((lng) => {
+                                        const isActive = currentLang === lng;
+                                        return (
+                                            <button
+                                                key={lng}
+                                                type="button"
+                                                onClick={() => handleChangeLanguage(lng)}
+                                                title={t(
+                                                    lng === "vi"
+                                                        ? "dashboard.settings.languageName.vi"
+                                                        : "dashboard.settings.languageName.en"
+                                                )}
+                                                style={{
+                                                    padding: "4px 10px",
+                                                    borderRadius: 999,
+                                                    border: isActive
+                                                        ? "none"
+                                                        : `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
+                                                    background: isActive
+                                                        ? "linear-gradient(135deg,#38bdf8,#6366f1)"
+                                                        : "transparent",
+                                                    color: isActive ? "#f9fafb" : textColor,
+                                                    fontSize: 11,
+                                                    fontWeight: 600,
+                                                    cursor: "pointer",
+                                                    textTransform: "uppercase",
+                                                    letterSpacing: 0.8,
+                                                }}
+                                            >
+                                                {lng.toUpperCase()}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Dark mode toggle */}
                             <button
                                 type="button"
                                 onClick={() => {
@@ -383,7 +459,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                     fontSize: 13,
                                 }}
                             >
-                                <span>Dark mode</span>
+                                <span>{t("nodeDetail.settings.darkMode")}</span>
                                 <span
                                     style={{
                                         width: 34,
@@ -411,6 +487,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                             </button>
                         </div>
                     )}
+
                 </div>
             </header>
 
@@ -437,10 +514,10 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                 >
                     <div>
                         <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>
-                            Node {devAddrNum} details
+                            {t("nodeDetail.summary.title", { devAddr: devAddrNum })}
                         </h1>
                         <p style={{ fontSize: 13, color: summaryTextSub }}>
-                            Hiển thị tối đa 20 gói dữ liệu cảm biến gần nhất cho node này.
+                            {t("nodeDetail.summary.description")}
                         </p>
                     </div>
 
@@ -462,7 +539,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                 boxShadow: "0 8px 20px rgba(239,68,68,0.35)",
                             }}
                         >
-                            Báo cáo sự cố
+                            {t("nodeDetail.summary.reportButton")}
                         </button>
                     )}
                 </section>
@@ -512,7 +589,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     }}
                 >
                     {/* Temperature */}
-                    <ChartCard title="Air temperature (°C)" darkMode={darkMode}>
+                    <ChartCard title={t("nodeDetail.charts.temperature")} darkMode={darkMode}>
                         {chartData.length === 0 ? (
                             <EmptyChartMessage />
                         ) : (
@@ -562,7 +639,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     </ChartCard>
 
                     {/* Humidity */}
-                    <ChartCard title="Air humidity (%)" darkMode={darkMode}>
+                    <ChartCard title={t("nodeDetail.charts.humidity")} darkMode={darkMode}>
                         {chartData.length === 0 ? (
                             <EmptyChartMessage />
                         ) : (
@@ -612,7 +689,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     </ChartCard>
 
                     {/* Radiant temperature */}
-                    <ChartCard title="Radiant temperature (MaxT, °C)" darkMode={darkMode}>
+                    <ChartCard title={t("nodeDetail.charts.maxT")} darkMode={darkMode}>
                         {chartData.length === 0 ? (
                             <EmptyChartMessage />
                         ) : (
@@ -662,7 +739,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     </ChartCard>
 
                     {/* CO2 */}
-                    <ChartCard title="CO₂ concentration (ppm)" darkMode={darkMode}>
+                    <ChartCard title={t("nodeDetail.charts.co2")} darkMode={darkMode}>
                         {chartData.length === 0 ? (
                             <EmptyChartMessage />
                         ) : (
@@ -721,7 +798,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                             marginBottom: 12,
                         }}
                     >
-                        Data details (last {history.length} records)
+                        {t("nodeDetail.table.title", { count: history.length })}
                     </h2>
 
                     <div
@@ -747,17 +824,9 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                             : "rgba(226,232,240,0.9)",
                                     }}
                                 >
-                                    {[
-                                        "Battery",
-                                        "CO₂",
-                                        "Temperature",
-                                        "Humidity",
-                                        "MaxT",
-                                        "Fire",
-                                        "Timestamp",
-                                    ].map((h) => (
+                                    {tableHeaders.map((key) => (
                                         <th
-                                            key={h}
+                                            key={key}
                                             style={{
                                                 padding: "10px 12px",
                                                 textAlign: "left",
@@ -765,7 +834,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                                 borderBottom: `1px solid ${borderColor}`,
                                             }}
                                         >
-                                            {h}
+                                            {t(`nodeDetail.table.headers.${key}`)}
                                         </th>
                                     ))}
                                 </tr>
@@ -781,7 +850,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                                 opacity: 0.7,
                                             }}
                                         >
-                                            Chưa có dữ liệu nào cho node này.
+                                            {t("nodeDetail.table.noData")}
                                         </td>
                                     </tr>
                                 )}
@@ -823,7 +892,9 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                                 fontWeight: 600,
                                             }}
                                         >
-                                            {d.fire ? "YES" : "NO"}
+                                            {d.fire
+                                                ? t("nodeDetail.table.fire.yes")
+                                                : t("nodeDetail.table.fire.no")}
                                         </td>
                                         <td style={{ padding: "8px 12px" }}>
                                             {d.timestamp ?? "--"}
@@ -872,7 +943,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                         marginBottom: 10,
                                     }}
                                 >
-                                    Báo cáo sự cố node {devAddrNum}
+                                    {t("nodeDetail.report.title", { devAddr: devAddrNum })}
                                 </h2>
                                 <p
                                     style={{
@@ -881,7 +952,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                         marginBottom: 16,
                                     }}
                                 >
-                                    Bạn có chắc chắn muốn gửi báo cáo sự cố cho node này không?
+                                    {t("nodeDetail.report.confirmText", { devAddr: devAddrNum })}
                                 </p>
 
                                 <div
@@ -906,7 +977,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                             cursor: "pointer",
                                         }}
                                     >
-                                        Không
+                                        {t("nodeDetail.report.no")}
                                     </button>
                                     <button
                                         type="button"
@@ -923,7 +994,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                             cursor: "pointer",
                                         }}
                                     >
-                                        Có, gửi báo cáo
+                                        {t("nodeDetail.report.yesSend")}
                                     </button>
                                 </div>
                             </>
@@ -936,7 +1007,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                         marginBottom: 10,
                                     }}
                                 >
-                                    Đã gửi báo cáo
+                                    {t("nodeDetail.report.sentTitle")}
                                 </h2>
                                 <p
                                     style={{
@@ -945,8 +1016,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                         marginBottom: 16,
                                     }}
                                 >
-                                    Báo cáo sự cố cho node {devAddrNum} đã được gửi. Đội vận hành
-                                    sẽ xử lý trong thời gian sớm nhất.
+                                    {t("nodeDetail.report.sentDescription", { devAddr: devAddrNum })}
                                 </p>
                                 <div
                                     style={{
@@ -968,7 +1038,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                             cursor: "pointer",
                                         }}
                                     >
-                                        Đóng
+                                        {t("nodeDetail.report.close")}
                                     </button>
                                 </div>
                             </>
@@ -979,6 +1049,17 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
         </div>
     );
 };
+
+// Dùng key type-safe cho headers
+const HEADER_KEYS = {
+    battery: "battery",
+    co2: "co2",
+    temperature: "temperature",
+    humidity: "humidity",
+    maxT: "maxT",
+    fire: "fire",
+    timestamp: "timestamp",
+} as const;
 
 /** Card khung cho mỗi biểu đồ */
 const ChartCard: React.FC<{
@@ -1022,19 +1103,22 @@ const ChartCard: React.FC<{
     </div>
 );
 
-const EmptyChartMessage: React.FC = () => (
-    <div
-        style={{
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 12,
-            opacity: 0.6,
-        }}
-    >
-        Không có dữ liệu để vẽ.
-    </div>
-);
+const EmptyChartMessage: React.FC = () => {
+    const { t } = useTranslation();
+    return (
+        <div
+            style={{
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+                opacity: 0.6,
+            }}
+        >
+            {t("nodeDetail.charts.empty")}
+        </div>
+    );
+};
 
 export default NodeDetailPage;

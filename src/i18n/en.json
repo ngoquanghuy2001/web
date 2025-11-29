@@ -1,0 +1,157 @@
+{
+    "nodeCard": {
+        "status": {
+            "safe": "Safe",
+            "noData": "No data",
+            "offline": "Offline",
+            "warning": "WARNING"
+        },
+        "nodeLabel": "Node",
+        "devAddr": "DevAddr {{devAddr}}",
+        "removeNodeTitle": "Remove node",
+        "lastUpdate": "Last update: {{timestamp}}",
+        "noUpdateYet": "No update received yet.",
+        "noSensorDataYet": "No data received for DevAddr {{devAddr}} yet.",
+        "temperatureLabel": "Temperature",
+        "humidityLabel": "Humidity",
+        "co2Label": "CO₂",
+        "fireStatusLabel": "Fire status",
+        "fireStatus": {
+            "warning": "Fire warning",
+            "ok": "No warning"
+        },
+        "viewDetail": "View detail",
+        "tooltip": {
+            "noDataYet": "Node will show data as soon as the first packet is received.",
+            "safe": "Temperature and CO₂ are within safe thresholds.",
+            "warning": "Danger: temperature or CO₂ exceeds safe thresholds."
+        }
+    },
+    "nodeDetail": {
+        "noEmail": "No email",
+        "userDefault": "User",
+        "back": "Back",
+        "header": {
+            "nodeTitle": "Node {{devAddr}}",
+            "subtitle": "Detailed view"
+        },
+        "nodeMenu": {
+            "title": "Options",
+            "header": "Node actions",
+            "reportIncident": "Report incident"
+        },
+        "settings": {
+            "header": "Settings",
+            "darkMode": "Dark mode"
+        },
+        "summary": {
+            "title": "Node {{devAddr}} details",
+            "description": "Showing up to the 20 most recent sensor packets for this node.",
+            "reportButton": "Report incident"
+        },
+        "stats": {
+            "temperature": "Current temperature",
+            "humidity": "Current humidity",
+            "co2": "Current CO₂",
+            "battery": "Battery"
+        },
+        "charts": {
+            "temperature": "Air temperature (°C)",
+            "humidity": "Air humidity (%)",
+            "maxT": "Radiant temperature (MaxT, °C)",
+            "co2": "CO₂ concentration (ppm)",
+            "empty": "No data available to plot."
+        },
+        "table": {
+            "title": "Data details (last {{count}} records)",
+            "headers": {
+                "battery": "Battery",
+                "co2": "CO₂",
+                "temperature": "Temperature",
+                "humidity": "Humidity",
+                "maxT": "MaxT",
+                "fire": "Fire",
+                "timestamp": "Timestamp"
+            },
+            "noData": "No data available for this node.",
+            "fire": {
+                "yes": "YES",
+                "no": "NO"
+            }
+        },
+        "report": {
+            "title": "Report incident for node {{devAddr}}",
+            "confirmText": "Are you sure you want to send an incident report for this node?",
+            "no": "No",
+            "yesSend": "Yes, send report",
+            "sentTitle": "Report sent",
+            "sentDescription": "Incident report for node {{devAddr}} has been sent. The operations team will handle it as soon as possible.",
+            "close": "Close"
+        }
+    },
+    "app": {
+        "loading": {
+            "checkSession": "Checking your login session..."
+        },
+        "notLoggedIn": "You are not logged in.",
+        "loginButton": "Login with Cognito",
+        "errors": {
+            "cannotGetToken": "Unable to retrieve token from Cognito."
+        }
+    },
+    "dashboard": {
+        "noEmail": "No email",
+        "userDefault": "User",
+        "logout": "Log out",
+        "header": {
+            "title": "Wildfire Monitoring",
+            "subtitle": "Realtime sensor dashboard"
+        },
+        "settings": {
+            "title": "Settings",
+            "darkMode": "Dark mode",
+            "language": "Language",
+            "languageName": {
+                "vi": "Vietnamese",
+                "en": "English"
+            }
+        },
+        "main": {
+            "title": "Dashboard",
+            "description": "Monitor sensor nodes (DevAddr) in real time. You can add/remove nodes and view detailed data for each node."
+        },
+        "actions": {
+            "addNode": "Add node"
+        },
+        "summary": {
+            "totalNodes": "Total nodes",
+            "activeNodes": "Active nodes",
+            "inactiveNodes": "Inactive nodes (> 1 minute)",
+            "lastUpdate": {
+                "label": "Last update",
+                "noData": "No data"
+            }
+        },
+        "nodes": {
+            "title": "Node list",
+            "subtitle": "Total {{count}} nodes – click each node to see details.",
+            "empty": "No nodes yet. Click \"Add node\" to add a new DevAddr."
+        },
+        "addNode": {
+            "title": "Add new node",
+            "description": "Enter the DevAddr (positive integer) of the sensor node you want to monitor.",
+            "label": "DevAddr",
+            "placeholder": "Example: 1, 2, 3...",
+            "invalidDevAddr": "DevAddr must be a positive integer.",
+            "duplicateDevAddr": "DevAddr {{devAddr}} already exists in the list.",
+            "cancel": "Cancel",
+            "submit": "Add node"
+        },
+        "deleteNode": {
+            "title": "Delete node",
+            "description": "Are you sure you want to delete node DevAddr {{devAddr}} from the dashboard?",
+            "cancel": "Cancel",
+            "confirm": "Delete"
+        }
+    }
+}

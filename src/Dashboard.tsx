@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { SensorData } from "./api/appsyncClient";
 import NodeCard from "./node/NodeCard";
+import { useTranslation } from "react-i18next"; // 🔹 thêm
 
 export interface UserInfo {
   username: string;
@@ -36,7 +37,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   darkMode = true,
   onToggleDarkMode,
 }) => {
-  const gmail = user.attributes.email ?? "Không có email";
+  const { t, i18n } = useTranslation(); // 🔹 i18n
+  const gmail = user.attributes.email ?? t("dashboard.noEmail");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [devAddrInput, setDevAddrInput] = useState("");
@@ -69,7 +71,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const value = Number(devAddrInput);
 
     if (!Number.isInteger(value) || value <= 0) {
-      setError("DevAddr phải là số nguyên dương.");
+      setError(t("dashboard.addNode.invalidDevAddr")); // 🔹 i18n
       return;
     }
 
@@ -96,7 +98,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const timestamps = nodes
       .map((n) => n.sensorData?.timestamp)
       .filter((t): t is string => !!t);
-    if (!timestamps.length) return "Chưa có dữ liệu";
+    if (!timestamps.length) return t("dashboard.summary.lastUpdate.noData");
     return timestamps.sort().reverse()[0];
   })();
 
@@ -116,6 +118,15 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const toggleKnobTransform = darkMode ? "translateX(18px)" : "translateX(0px)";
   const toggleBg = darkMode ? "#22c55e" : "#9ca3af";
+
+  // ============================
+  // Language switcher
+  // ============================
+  const currentLang = (i18n.language || "vi").split("-")[0] as "vi" | "en";
+
+  const handleChangeLanguage = (lng: "vi" | "en") => {
+    i18n.changeLanguage(lng);
+  };
 
   return (
     <div
@@ -174,7 +185,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 letterSpacing: 0.5,
               }}
             >
-              Wildfire Monitoring
+              {t("dashboard.header.title")}
             </div>
             <div
               style={{
@@ -184,7 +195,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 letterSpacing: 1,
               }}
             >
-              Realtime sensor dashboard
+              {t("dashboard.header.subtitle")}
             </div>
           </div>
         </div>
@@ -200,7 +211,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         >
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 13, fontWeight: 500 }}>
-              {user.username || "User"}
+              {user.username || t("dashboard.userDefault")}
             </div>
             <div style={{ fontSize: 11, opacity: 0.7 }}>{gmail}</div>
           </div>
@@ -247,7 +258,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 letterSpacing: 0.8,
               }}
             >
-              Log out
+              {t("dashboard.logout")}
             </button>
           )}
 
@@ -258,7 +269,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 position: "absolute",
                 top: 44,
                 right: 0,
-                width: 220,
+                width: 240,
                 borderRadius: 16,
                 border: `1px solid ${cardBorder}`,
                 backgroundColor: popupBg,
@@ -274,7 +285,64 @@ const Dashboard: React.FC<DashboardProps> = ({
                   marginBottom: 8,
                 }}
               >
-                Settings
+                {t("dashboard.settings.title")}
+              </div>
+
+              {/* 🔹 Language switcher – nằm trên Dark mode */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  padding: "6px 8px",
+                  borderRadius: 10,
+                  marginBottom: 6,
+                }}
+              >
+                <span style={{ fontSize: 13 }}>
+                  {t("dashboard.settings.language")}
+                </span>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    gap: 6,
+                  }}
+                >
+                  {(["vi", "en"] as const).map((lng) => {
+                    const isActive = currentLang === lng;
+                    return (
+                      <button
+                        key={lng}
+                        type="button"
+                        onClick={() => handleChangeLanguage(lng)}
+                        title={t(
+                          lng === "vi"
+                            ? "dashboard.settings.languageName.vi"
+                            : "dashboard.settings.languageName.en"
+                        )}
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                          border: isActive
+                            ? "none"
+                            : `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
+                          background: isActive
+                            ? "linear-gradient(135deg,#38bdf8,#6366f1)"
+                            : "transparent",
+                          color: isActive ? "#f9fafb" : textColor,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          textTransform: "uppercase",
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        {lng.toUpperCase()}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Dark mode toggle */}
@@ -298,7 +366,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   fontSize: 13,
                 }}
               >
-                <span>Dark mode</span>
+                <span>{t("dashboard.settings.darkMode")}</span>
                 <span
                   style={{
                     width: 34,
@@ -357,7 +425,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 marginBottom: 4,
               }}
             >
-              Dashboard
+              {t("dashboard.main.title")}
             </h1>
             <p
               style={{
@@ -366,8 +434,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 maxWidth: 420,
               }}
             >
-              Giám sát trạng thái các node cảm biến (DevAddr) theo thời gian
-              thực. Bạn có thể thêm / xoá node và xem chi tiết từng node.
+              {t("dashboard.main.description")}
             </p>
           </div>
 
@@ -408,7 +475,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               >
                 +
               </span>
-              Add node
+              {t("dashboard.actions.addNode")}
             </button>
           </div>
         </div>
@@ -441,7 +508,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 marginBottom: 4,
               }}
             >
-              Tổng số node
+              {t("dashboard.summary.totalNodes")}
             </div>
             <div style={{ fontSize: 24, fontWeight: 700 }}>{totalNodes}</div>
           </div>
@@ -465,7 +532,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 marginBottom: 4,
               }}
             >
-              Node đang hoạt động
+              {t("dashboard.summary.activeNodes")}
             </div>
             <div style={{ fontSize: 24, fontWeight: 700 }}>{activeNodes}</div>
           </div>
@@ -489,7 +556,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 marginBottom: 4,
               }}
             >
-              Node không hoạt động (&gt; 1 phút)
+              {t("dashboard.summary.inactiveNodes")}
             </div>
             <div style={{ fontSize: 24, fontWeight: 700 }}>{inactiveNodes}</div>
           </div>
@@ -513,7 +580,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 marginBottom: 4,
               }}
             >
-              Lần cập nhật cuối
+              {t("dashboard.summary.lastUpdate.label")}
             </div>
             <div
               style={{
@@ -560,7 +627,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     opacity: 0.75,
                   }}
                 >
-                  Danh sách node
+                  {t("dashboard.nodes.title")}
                 </div>
                 <div
                   style={{
@@ -568,7 +635,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     color: summaryTextSub,
                   }}
                 >
-                  Tổng {totalNodes} node – click vào từng node để xem chi tiết.
+                  {t("dashboard.nodes.subtitle", { count: totalNodes })}
                 </div>
               </div>
             </div>
@@ -603,7 +670,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   color: summaryTextSub,
                 }}
               >
-                Chưa có node nào. Hãy bấm “Add node” để thêm DevAddr mới.
+                {t("dashboard.nodes.empty")}
               </div>
             )}
           </div>
@@ -644,7 +711,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 marginBottom: 10,
               }}
             >
-              Thêm node mới
+              {t("dashboard.addNode.title")}
             </h2>
             <p
               style={{
@@ -653,8 +720,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 marginBottom: 14,
               }}
             >
-              Nhập DevAddr (số nguyên dương) của node cảm biến mà bạn muốn theo
-              dõi.
+              {t("dashboard.addNode.description")}
             </p>
 
             <form onSubmit={handleSubmit}>
@@ -668,7 +734,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     marginBottom: 4,
                   }}
                 >
-                  DevAddr
+                  {t("dashboard.addNode.label")}
                 </label>
                 <input
                   id="devAddr"
@@ -685,7 +751,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     fontSize: 13,
                     outline: "none",
                   }}
-                  placeholder="Ví dụ: 1, 2, 3..."
+                  placeholder={t("dashboard.addNode.placeholder")}
                 />
               </div>
 
@@ -722,7 +788,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     cursor: "pointer",
                   }}
                 >
-                  Huỷ
+                  {t("dashboard.addNode.cancel")}
                 </button>
                 <button
                   type="submit"
@@ -737,7 +803,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     cursor: "pointer",
                   }}
                 >
-                  Thêm node
+                  {t("dashboard.addNode.submit")}
                 </button>
               </div>
             </form>
@@ -779,7 +845,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 marginBottom: 8,
               }}
             >
-              Xoá node
+              {t("dashboard.deleteNode.title")}
             </h2>
             <p
               style={{
@@ -788,8 +854,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                 marginBottom: 14,
               }}
             >
-              Bạn có chắc chắn muốn xoá node DevAddr {deleteTarget} khỏi
-              dashboard?
+              {t("dashboard.deleteNode.description", {
+                devAddr: deleteTarget,
+              })}
             </p>
 
             <div
@@ -812,7 +879,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   cursor: "pointer",
                 }}
               >
-                Huỷ
+                {t("dashboard.deleteNode.cancel")}
               </button>
               <button
                 type="button"
@@ -833,7 +900,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   cursor: "pointer",
                 }}
               >
-                Xoá
+                {t("dashboard.deleteNode.confirm")}
               </button>
             </div>
           </div>

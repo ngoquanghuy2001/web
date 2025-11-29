@@ -1,0 +1,157 @@
+{
+    "nodeCard": {
+        "status": {
+            "safe": "An toàn",
+            "noData": "Chưa có dữ liệu",
+            "offline": "Offline",
+            "warning": "Cảnh báo"
+        },
+        "nodeLabel": "Node",
+        "devAddr": "DevAddr {{devAddr}}",
+        "removeNodeTitle": "Xoá node",
+        "lastUpdate": "Lần cập nhật gần nhất: {{timestamp}}",
+        "noUpdateYet": "Chưa có dữ liệu cập nhật.",
+        "noSensorDataYet": "Chưa nhận được dữ liệu nào cho DevAddr {{devAddr}}.",
+        "temperatureLabel": "Nhiệt độ",
+        "humidityLabel": "Độ ẩm",
+        "co2Label": "Nồng độ CO₂",
+        "fireStatusLabel": "Trạng thái cháy",
+        "fireStatus": {
+            "warning": "Cảnh báo cháy",
+            "ok": "Không có cảnh báo"
+        },
+        "viewDetail": "Xem chi tiết",
+        "tooltip": {
+            "noDataYet": "Node sẽ hiển thị dữ liệu ngay khi có gói tin đầu tiên.",
+            "safe": "Nhiệt độ và CO₂ đang nằm trong ngưỡng an toàn.",
+            "warning": "Nguy hiểm: nhiệt độ hoặc CO₂ vượt ngưỡng an toàn."
+        }
+    },
+    "nodeDetail": {
+        "noEmail": "Không có email",
+        "userDefault": "User",
+        "back": "Quay lại",
+        "header": {
+            "nodeTitle": "Node {{devAddr}}",
+            "subtitle": "Chi tiết"
+        },
+        "nodeMenu": {
+            "title": "Tuỳ chọn",
+            "header": "Hành động với node",
+            "reportIncident": "Báo cáo sự cố"
+        },
+        "settings": {
+            "header": "Cài đặt",
+            "darkMode": "Dark mode"
+        },
+        "summary": {
+            "title": "Chi tiết node {{devAddr}}",
+            "description": "Hiển thị tối đa 20 gói dữ liệu cảm biến gần nhất cho node này.",
+            "reportButton": "Báo cáo sự cố"
+        },
+        "stats": {
+            "temperature": "Nhiệt độ hiện tại",
+            "humidity": "Độ ẩm hiện tại",
+            "co2": "CO₂ hiện tại",
+            "battery": "Pin"
+        },
+        "charts": {
+            "temperature": "Nhiệt độ không khí (°C)",
+            "humidity": "Độ ẩm không khí (%)",
+            "maxT": "Nhiệt độ bức xạ (MaxT, °C)",
+            "co2": "Nồng độ CO₂ (ppm)",
+            "empty": "Không có dữ liệu để vẽ."
+        },
+        "table": {
+            "title": "Chi tiết dữ liệu ({{count}} bản ghi gần nhất)",
+            "headers": {
+                "battery": "Pin",
+                "co2": "CO₂",
+                "temperature": "Nhiệt độ",
+                "humidity": "Độ ẩm",
+                "maxT": "MaxT",
+                "fire": "Cháy",
+                "timestamp": "Thời gian"
+            },
+            "noData": "Chưa có dữ liệu nào cho node này.",
+            "fire": {
+                "yes": "CÓ",
+                "no": "KHÔNG"
+            }
+        },
+        "report": {
+            "title": "Báo cáo sự cố node {{devAddr}}",
+            "confirmText": "Bạn có chắc chắn muốn gửi báo cáo sự cố cho node này không?",
+            "no": "Không",
+            "yesSend": "Có, gửi báo cáo",
+            "sentTitle": "Đã gửi báo cáo",
+            "sentDescription": "Báo cáo sự cố cho node {{devAddr}} đã được gửi. Đội vận hành sẽ xử lý trong thời gian sớm nhất.",
+            "close": "Đóng"
+        }
+    },
+    "app": {
+        "loading": {
+            "checkSession": "Đang kiểm tra phiên đăng nhập..."
+        },
+        "notLoggedIn": "Bạn chưa đăng nhập.",
+        "loginButton": "Đăng nhập với Cognito",
+        "errors": {
+            "cannotGetToken": "Không thể lấy token từ Cognito."
+        }
+    },
+    "dashboard": {
+        "noEmail": "Không có email",
+        "userDefault": "User",
+        "logout": "Đăng xuất",
+        "header": {
+            "title": "Wildfire Monitoring",
+            "subtitle": "Realtime sensor dashboard"
+        },
+        "settings": {
+            "title": "Cài đặt",
+            "darkMode": "Chế độ tối",
+            "language": "Ngôn ngữ",
+            "languageName": {
+                "vi": "Tiếng Việt",
+                "en": "Tiếng Anh"
+            }
+        },
+        "main": {
+            "title": "Dashboard",
+            "description": "Giám sát trạng thái các node cảm biến (DevAddr) theo thời gian thực. Bạn có thể thêm / xoá node và xem chi tiết từng node."
+        },
+        "actions": {
+            "addNode": "Thêm node"
+        },
+        "summary": {
+            "totalNodes": "Tổng số node",
+            "activeNodes": "Node đang hoạt động",
+            "inactiveNodes": "Node không hoạt động (> 1 phút)",
+            "lastUpdate": {
+                "label": "Lần cập nhật cuối",
+                "noData": "Chưa có dữ liệu"
+            }
+        },
+        "nodes": {
+            "title": "Danh sách node",
+            "subtitle": "Tổng {{count}} node – click vào từng node để xem chi tiết.",
+            "empty": "Chưa có node nào. Hãy bấm \"Thêm node\" để thêm DevAddr mới."
+        },
+        "addNode": {
+            "title": "Thêm node mới",
+            "description": "Nhập DevAddr (số nguyên dương) của node cảm biến mà bạn muốn theo dõi.",
+            "label": "DevAddr",
+            "placeholder": "Ví dụ: 1, 2, 3...",
+            "invalidDevAddr": "DevAddr phải là số nguyên dương.",
+            "duplicateDevAddr": "DevAddr {{devAddr}} đã tồn tại trong danh sách.",
+            "cancel": "Huỷ",
+            "submit": "Thêm node"
+        },
+        "deleteNode": {
+            "title": "Xoá node",
+            "description": "Bạn có chắc chắn muốn xoá node DevAddr {{devAddr}} khỏi dashboard?",
+            "cancel": "Huỷ",
+            "confirm": "Xoá"
+        }
+    }
+}

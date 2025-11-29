@@ -1,5 +1,6 @@
 import React from "react";
 import { SensorData } from "../api/appsyncClient";
+import { useTranslation } from "react-i18next"; // 🔹 thêm
 
 export interface NodeCardProps {
     devAddr: number;
@@ -23,6 +24,8 @@ const NodeCard: React.FC<NodeCardProps> = ({
     onMoreDetails,
     darkMode = true,
 }) => {
+    const { t } = useTranslation(); // 🔹 dùng i18n
+
     const temperature = sensorData?.temperature;
     const humidity = sensorData?.humidity;
     const co2 = sensorData?.co2;
@@ -42,15 +45,18 @@ const NodeCard: React.FC<NodeCardProps> = ({
             temperature >= 40) ||
         (co2 !== undefined && co2 !== null && co2 >= 2000);
 
-    let statusText = "Safe";
+    // 🔹 status text dùng key i18n
+    let statusKey = "nodeCard.status.safe";
 
     if (!timestamp) {
-        statusText = "No data";
+        statusKey = "nodeCard.status.noData";
     } else if (isOffline) {
-        statusText = "Offline";
+        statusKey = "nodeCard.status.offline";
     } else if (isWarning) {
-        statusText = "WARNING";
+        statusKey = "nodeCard.status.warning";
     }
+
+    const statusText = t(statusKey);
 
     const handleRemoveClick = () => {
         onRemove?.(devAddr);
@@ -217,7 +223,7 @@ const NodeCard: React.FC<NodeCardProps> = ({
                             opacity: 0.7,
                         }}
                     >
-                        Node
+                        {t("nodeCard.nodeLabel")}
                     </div>
                     <div
                         style={{
@@ -225,7 +231,7 @@ const NodeCard: React.FC<NodeCardProps> = ({
                             fontWeight: 600,
                         }}
                     >
-                        DevAddr {devAddr}
+                        {t("nodeCard.devAddr", { devAddr })}
                     </div>
                 </div>
 
@@ -260,7 +266,7 @@ const NodeCard: React.FC<NodeCardProps> = ({
                                 alignItems: "center",
                                 justifyContent: "center",
                             }}
-                            title="Remove node"
+                            title={t("nodeCard.removeNodeTitle")}
                         >
                             ×
                         </button>
@@ -279,8 +285,8 @@ const NodeCard: React.FC<NodeCardProps> = ({
                 }}
             >
                 {timestamp
-                    ? `Last update: ${timestamp}`
-                    : "Chưa có dữ liệu cập nhật."}
+                    ? t("nodeCard.lastUpdate", { timestamp })
+                    : t("nodeCard.noUpdateYet")}
             </div>
 
             {/* Nếu chưa loaded lần nào */}
@@ -294,7 +300,7 @@ const NodeCard: React.FC<NodeCardProps> = ({
                         zIndex: 1,
                     }}
                 >
-                    Chưa nhận được dữ liệu nào cho DevAddr {devAddr}.
+                    {t("nodeCard.noSensorDataYet", { devAddr })}
                 </p>
             )}
 
@@ -311,27 +317,37 @@ const NodeCard: React.FC<NodeCardProps> = ({
                         }}
                     >
                         <div>
-                            <div style={{ opacity: 0.6, fontSize: 11 }}>Temperature</div>
+                            <div style={{ opacity: 0.6, fontSize: 11 }}>
+                                {t("nodeCard.temperatureLabel")}
+                            </div>
                             <div style={{ fontWeight: 500 }}>
                                 {formatValue(temperature, "°C")}
                             </div>
                         </div>
                         <div>
-                            <div style={{ opacity: 0.6, fontSize: 11 }}>Humidity</div>
+                            <div style={{ opacity: 0.6, fontSize: 11 }}>
+                                {t("nodeCard.humidityLabel")}
+                            </div>
                             <div style={{ fontWeight: 500 }}>
                                 {formatValue(humidity, "%")}
                             </div>
                         </div>
                         <div>
-                            <div style={{ opacity: 0.6, fontSize: 11 }}>CO₂</div>
+                            <div style={{ opacity: 0.6, fontSize: 11 }}>
+                                {t("nodeCard.co2Label")}
+                            </div>
                             <div style={{ fontWeight: 500 }}>
                                 {formatValue(co2, " ppm")}
                             </div>
                         </div>
                         <div>
-                            <div style={{ opacity: 0.6, fontSize: 11 }}>Fire status</div>
+                            <div style={{ opacity: 0.6, fontSize: 11 }}>
+                                {t("nodeCard.fireStatusLabel")}
+                            </div>
                             <div style={{ fontWeight: 500 }}>
-                                {sensorData.fire ? "Cảnh báo cháy" : "Không có cảnh báo"}
+                                {sensorData.fire
+                                    ? t("nodeCard.fireStatus.warning")
+                                    : t("nodeCard.fireStatus.ok")}
                             </div>
                         </div>
                     </div>
@@ -359,7 +375,7 @@ const NodeCard: React.FC<NodeCardProps> = ({
                                 zIndex: 1,
                             }}
                         >
-                            View detail
+                            {t("nodeCard.viewDetail")}
                         </button>
                     )}
                 </>
@@ -382,10 +398,10 @@ const NodeCard: React.FC<NodeCardProps> = ({
             >
                 <span style={{ fontSize: 14 }}>ℹ</span>
                 {!sensorData && (
-                    <span>Node sẽ hiển thị dữ liệu ngay khi có gói tin đầu tiên.</span>
+                    <span>{t("nodeCard.tooltip.noDataYet")}</span>
                 )}
                 {sensorData && !isWarning && (
-                    <span>Nhiệt độ &amp; CO₂ đang nằm trong ngưỡng an toàn.</span>
+                    <span>{t("nodeCard.tooltip.safe")}</span>
                 )}
                 {sensorData && isWarning && (
                     <div
@@ -394,7 +410,7 @@ const NodeCard: React.FC<NodeCardProps> = ({
                             maxWidth: "100%",
                         }}
                     >
-                        <span>Nguy hiểm: nhiệt độ hoặc CO₂ vượt ngưỡng an toàn.</span>
+                        <span>{t("nodeCard.tooltip.warning")}</span>
                     </div>
                 )}
             </div>
