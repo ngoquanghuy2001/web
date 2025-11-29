@@ -33,28 +33,31 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
     const { devAddr } = useParams<{ devAddr: string }>();
     const devAddrNum = Number(devAddr);
 
-    // history dùng cho bảng + biểu đồ
     const [history, setHistory] = useState<SensorData[]>([]);
     const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
 
-    // Đồng bộ history: ưu tiên từ sensorHistoryMap, nếu chưa có thì đọc từ localStorage.wildfire_history
+    // Popup báo cáo sự cố
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [reportSent, setReportSent] = useState(false);
+
+    // Menu hành động của node (nút 3 chấm)
+    const [isNodeActionsOpen, setIsNodeActionsOpen] = useState(false);
+
+    // Đồng bộ history từ state App hoặc localStorage
     useEffect(() => {
-        // 1. Ưu tiên state từ App.tsx
         const fromMap = sensorHistoryMap[devAddrNum];
         if (fromMap && fromMap.length > 0) {
             setHistory(fromMap);
             return;
         }
 
-        // 2. Fallback: đọc map chung từ localStorage
         try {
             const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
             if (!raw) return;
 
             const parsed = JSON.parse(raw) as Record<string, SensorData[]>;
             const arr =
-                parsed[devAddrNum] || // key dạng số
-                parsed[String(devAddrNum)]; // fallback nếu key là chuỗi "2"
+                parsed[devAddrNum] || parsed[String(devAddrNum)];
 
             if (Array.isArray(arr)) {
                 setHistory(arr);
@@ -91,7 +94,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
         [latest]
     );
 
-    // Dữ liệu vẽ biểu đồ (tối đa 20 mẫu gần nhất, đảo ngược để thời gian tăng dần)
+    // Dữ liệu cho biểu đồ
     const chartData = useMemo(
         () =>
             [...history]
@@ -99,7 +102,6 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                 .reverse()
                 .map((d, index) => {
                     let label = d.timestamp ?? `#${index + 1}`;
-                    // Nếu timestamp có dạng "2025-11-29 21:57:29" thì chỉ lấy phần giờ (HH:mm:ss)
                     if (label.includes(" ")) {
                         const parts = label.split(" ");
                         label = parts[parts.length - 1];
@@ -115,6 +117,14 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
         [history]
     );
 
+    // Logic WARNING (giống NodeCard)
+    const isWarning =
+        !!latest &&
+        (latest.fire === true ||
+            (latest.temperature != null && latest.temperature >= 40) ||
+            (latest.co2 != null && latest.co2 >= 2000));
+
+    // Theme
     const bgRoot = darkMode ? "#020617" : "#f3f4f6";
     const textColor = darkMode ? "#e5e7eb" : "#0f172a";
     const borderColor = darkMode ? "#1f2937" : "#e5e7eb";
@@ -132,6 +142,22 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
     const toggleKnobTransform = darkMode ? "translateX(18px)" : "translateX(0px)";
     const toggleBg = darkMode ? "#22c55e" : "#9ca3af";
 
+    // Mở popup báo cáo
+    const openReportModal = () => {
+        setReportSent(false);
+        setIsReportModalOpen(true);
+    };
+
+    const closeReportModal = () => {
+        setIsReportModalOpen(false);
+    };
+
+    // Khi chọn "Báo cáo sự cố" trong menu 3 chấm
+    const handleReportFromMenu = () => {
+        setIsNodeActionsOpen(false);
+        openReportModal();
+    };
+
     return (
         <div
             style={{
@@ -144,7 +170,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                 flexDirection: "column",
             }}
         >
-            {/* HEADER giống Dashboard nhưng có menu avatar */}
+            {/* HEADER */}
             <header
                 style={{
                     height: 64,
@@ -160,7 +186,14 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     zIndex: 30,
                 }}
             >
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        position: "relative",
+                    }}
+                >
                     <button
                         onClick={onBack}
                         style={{
@@ -175,20 +208,94 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     >
                         ← Back
                     </button>
-                    <div>
-                        <div style={{ fontSize: 16, fontWeight: 600 }}>
-                            Node {devAddrNum}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div>
+                            <div style={{ fontSize: 16, fontWeight: 600 }}>
+                                Node {devAddrNum}
+                            </div>
+                            <div
+                                style={{
+                                    fontSize: 11,
+                                    opacity: 0.7,
+                                    textTransform: "uppercase",
+                                    letterSpacing: 1,
+                                }}
+                            >
+                                Detailed view
+                            </div>
                         </div>
-                        <div
+
+                        {/* Nút 3 chấm: mở menu lựa chọn */}
+                        <button
+                            type="button"
+                            onClick={() => setIsNodeActionsOpen((v) => !v)}
                             style={{
-                                fontSize: 11,
-                                opacity: 0.7,
-                                textTransform: "uppercase",
-                                letterSpacing: 1,
+                                width: 28,
+                                height: 28,
+                                borderRadius: 999,
+                                border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
+                                background: "transparent",
+                                color: textColor,
+                                cursor: "pointer",
+                                fontSize: 16,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                paddingBottom: 2,
                             }}
+                            title="Tuỳ chọn"
                         >
-                            Detailed view
-                        </div>
+                            ⋮
+                        </button>
+
+                        {/* Menu lựa chọn của node (hiện khi ấn 3 chấm) */}
+                        {isNodeActionsOpen && (
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    top: 44,
+                                    left: 80, // lệch sang phải 1 chút cho đẹp
+                                    minWidth: 200,
+                                    borderRadius: 14,
+                                    border: `1px solid ${cardBorder}`,
+                                    backgroundColor: popupBg,
+                                    boxShadow: "0 18px 30px rgba(15,23,42,0.45)",
+                                    padding: 8,
+                                    zIndex: 40,
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontSize: 12,
+                                        opacity: 0.7,
+                                        marginBottom: 6,
+                                    }}
+                                >
+                                    Hành động với node
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={handleReportFromMenu}
+                                    style={{
+                                        width: "100%",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        padding: "6px 8px",
+                                        borderRadius: 10,
+                                        border: "none",
+                                        background: "transparent",
+                                        color: textColor,
+                                        fontSize: 13,
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    <span>Báo cáo sự cố</span>
+                                    <span style={{ fontSize: 12, opacity: 0.75 }}>⚠</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -207,7 +314,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                         <div style={{ fontSize: 11, opacity: 0.7 }}>{gmail}</div>
                     </div>
 
-                    {/* Avatar: click để mở menu */}
+                    {/* Avatar + menu settings (Darkmode) */}
                     <button
                         type="button"
                         onClick={() => setIsAvatarMenuOpen((v) => !v)}
@@ -231,7 +338,6 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                         {avatarChar}
                     </button>
 
-                    {/* MENU settings dưới avatar */}
                     {isAvatarMenuOpen && (
                         <div
                             style={{
@@ -257,7 +363,6 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                 Settings
                             </div>
 
-                            {/* Dark mode toggle */}
                             <button
                                 type="button"
                                 onClick={() => {
@@ -319,14 +424,47 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     margin: "0 auto",
                 }}
             >
-                {/* Summary */}
-                <section style={{ marginBottom: 24 }}>
-                    <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>
-                        Node {devAddrNum} details
-                    </h1>
-                    <p style={{ fontSize: 13, color: summaryTextSub }}>
-                        Hiển thị tối đa 20 gói dữ liệu cảm biến gần nhất cho node này.
-                    </p>
+                {/* Summary + nút Báo cáo nếu WARNING */}
+                <section
+                    style={{
+                        marginBottom: 24,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 16,
+                        alignItems: "flex-start",
+                        flexWrap: "wrap",
+                    }}
+                >
+                    <div>
+                        <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>
+                            Node {devAddrNum} details
+                        </h1>
+                        <p style={{ fontSize: 13, color: summaryTextSub }}>
+                            Hiển thị tối đa 20 gói dữ liệu cảm biến gần nhất cho node này.
+                        </p>
+                    </div>
+
+                    {/* Nút báo cáo sự cố: chỉ hiện khi WARNING */}
+                    {isWarning && (
+                        <button
+                            type="button"
+                            onClick={openReportModal}
+                            style={{
+                                padding: "8px 16px",
+                                borderRadius: 999,
+                                border: "none",
+                                background:
+                                    "linear-gradient(135deg, #ef4444, #b91c1c)", // đỏ cảnh báo
+                                color: "#f9fafb",
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                boxShadow: "0 8px 20px rgba(239,68,68,0.35)",
+                            }}
+                        >
+                            Báo cáo sự cố
+                        </button>
+                    )}
                 </section>
 
                 {/* Stat cards */}
@@ -574,7 +712,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     </ChartCard>
                 </section>
 
-                {/* Data table */}
+                {/* Bảng dữ liệu */}
                 <section>
                     <h2
                         style={{
@@ -697,13 +835,152 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     </div>
                 </section>
             </main>
+
+            {/* POPUP báo cáo sự cố */}
+            {isReportModalOpen && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        backgroundColor: "rgba(15,23,42,0.6)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 60,
+                    }}
+                    onClick={closeReportModal}
+                >
+                    <div
+                        style={{
+                            width: "100%",
+                            maxWidth: 380,
+                            backgroundColor: popupBg,
+                            borderRadius: 16,
+                            border: `1px solid ${cardBorder}`,
+                            boxShadow: "0 20px 40px rgba(15,23,42,0.9)",
+                            padding: 20,
+                            color: textColor,
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {!reportSent ? (
+                            <>
+                                <h2
+                                    style={{
+                                        fontSize: 18,
+                                        fontWeight: 600,
+                                        marginBottom: 10,
+                                    }}
+                                >
+                                    Báo cáo sự cố node {devAddrNum}
+                                </h2>
+                                <p
+                                    style={{
+                                        fontSize: 13,
+                                        opacity: 0.8,
+                                        marginBottom: 16,
+                                    }}
+                                >
+                                    Bạn có chắc chắn muốn gửi báo cáo sự cố cho node này không?
+                                </p>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "flex-end",
+                                        gap: 8,
+                                        marginTop: 8,
+                                    }}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={closeReportModal}
+                                        style={{
+                                            padding: "8px 12px",
+                                            borderRadius: 999,
+                                            border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"
+                                                }`,
+                                            background: "transparent",
+                                            color: textColor,
+                                            fontSize: 12,
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        Không
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setReportSent(true)}
+                                        style={{
+                                            padding: "8px 14px",
+                                            borderRadius: 999,
+                                            border: "none",
+                                            background:
+                                                "linear-gradient(135deg,#ef4444,#b91c1c)",
+                                            color: "#f9fafb",
+                                            fontSize: 12,
+                                            fontWeight: 600,
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        Có, gửi báo cáo
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <h2
+                                    style={{
+                                        fontSize: 18,
+                                        fontWeight: 600,
+                                        marginBottom: 10,
+                                    }}
+                                >
+                                    Đã gửi báo cáo
+                                </h2>
+                                <p
+                                    style={{
+                                        fontSize: 13,
+                                        opacity: 0.8,
+                                        marginBottom: 16,
+                                    }}
+                                >
+                                    Báo cáo sự cố cho node {devAddrNum} đã được gửi. Đội vận hành
+                                    sẽ xử lý trong thời gian sớm nhất.
+                                </p>
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "flex-end",
+                                    }}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={closeReportModal}
+                                        style={{
+                                            padding: "8px 14px",
+                                            borderRadius: 999,
+                                            border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"
+                                                }`,
+                                            background: "transparent",
+                                            color: textColor,
+                                            fontSize: 12,
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        Đóng
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
-/**
- * Card khung cho mỗi biểu đồ – để code gọn lại
- */
+/** Card khung cho mỗi biểu đồ */
 const ChartCard: React.FC<{
     title: string;
     children: React.ReactNode;
