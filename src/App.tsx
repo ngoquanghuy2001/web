@@ -19,6 +19,21 @@ const client = generateClient();
 const LOCAL_STORAGE_KEY = "wildfire_dashboard_nodes";
 // Lưu toàn bộ history theo dạng map { [devAddr]: SensorData[] }
 const HISTORY_STORAGE_KEY = "wildfire_history";
+// Lưu theme
+const THEME_STORAGE_KEY = "wildfire_theme";
+
+const getInitialTheme = (): boolean => {
+  if (typeof window === "undefined") return true;
+  try {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    if (saved === "light") return false;
+    if (saved === "dark") return true;
+  } catch {
+    // ignore
+  }
+  // mặc định dark
+  return true;
+};
 
 const App: React.FC = () => {
   const navigate = useNavigate();
@@ -36,6 +51,28 @@ const App: React.FC = () => {
   const [sensorHistoryMap, setSensorHistoryMap] = useState<
     Record<number, SensorData[]>
   >({});
+
+  // ============================
+  // Theme (Dark / Light)
+  // ============================
+  const [darkMode, setDarkMode] = useState<boolean>(getInitialTheme);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, darkMode ? "dark" : "light");
+    } catch {
+      // ignore
+    }
+    // set màu body cho đẹp
+    if (typeof document !== "undefined") {
+      document.body.style.backgroundColor = darkMode ? "#020617" : "#f3f4f6";
+      document.body.style.color = darkMode ? "#e5e7eb" : "#0f172a";
+    }
+  }, [darkMode]);
+
+  const handleToggleDarkMode = () => {
+    setDarkMode((prev) => !prev);
+  };
 
   // ============================
   // Load danh sách devAddrs từ localStorage
@@ -357,6 +394,8 @@ const App: React.FC = () => {
             onAddNode={handleAddNode}
             onRemoveNode={handleRemoveNode}
             onOpenNodeDetail={(devAddr) => navigate(`/node/${devAddr}`)}
+            darkMode={darkMode}
+            onToggleDarkMode={handleToggleDarkMode}
           />
         }
       />
@@ -367,6 +406,8 @@ const App: React.FC = () => {
             user={user as UserInfo}
             sensorHistoryMap={sensorHistoryMap}
             onBack={() => navigate("/")}
+            darkMode={darkMode}
+            onToggleDarkMode={handleToggleDarkMode}
           />
         }
       />

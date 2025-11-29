@@ -20,6 +20,10 @@ interface DashboardProps {
   onAddNode?: (devAddr: number) => void;
   onRemoveNode?: (devAddr: number) => void;
   onOpenNodeDetail?: (devAddr: number) => void;
+
+  // NEW: theme
+  darkMode?: boolean;
+  onToggleDarkMode?: () => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
@@ -29,6 +33,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   onAddNode,
   onRemoveNode,
   onOpenNodeDetail,
+  darkMode = true,
+  onToggleDarkMode,
 }) => {
   const gmail = user.attributes.email ?? "Không có email";
 
@@ -37,6 +43,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
+
+  const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -94,12 +102,27 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const avatarChar = (user.username || gmail || "U").charAt(0).toUpperCase();
 
+  // ============================
+  // Theme color helpers
+  // ============================
+  const bgRoot = darkMode ? "#020617" : "#f3f4f6";
+  const textColor = darkMode ? "#e5e7eb" : "#0f172a";
+  const headerBorder = darkMode ? "#1f2937" : "#e5e7eb";
+  const headerBg = darkMode ? "rgba(2,6,23,0.96)" : "rgba(255,255,255,0.94)";
+  const cardBorder = darkMode ? "#1f2937" : "#e5e7eb";
+  const popupBg = darkMode ? "#020617" : "#ffffff";
+
+  const summaryTextSub = darkMode ? "rgba(148,163,184,0.75)" : "#6b7280";
+
+  const toggleKnobTransform = darkMode ? "translateX(18px)" : "translateX(0px)";
+  const toggleBg = darkMode ? "#22c55e" : "#9ca3af";
+
   return (
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#020617", // slate-950
-        color: "#e5e7eb",
+        backgroundColor: bgRoot,
+        color: textColor,
         fontFamily:
           '"Inter", system-ui, -apple-system, BlinkMacSystemFont,"Segoe UI", sans-serif',
         display: "flex",
@@ -110,7 +133,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       <header
         style={{
           height: 64,
-          borderBottom: "1px solid #1f2937",
+          borderBottom: `1px solid ${headerBorder}`,
           padding: "0 32px",
           display: "flex",
           alignItems: "center",
@@ -118,7 +141,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           position: "sticky",
           top: 0,
           zIndex: 30,
-          backgroundColor: "rgba(2,6,23,0.96)",
+          backgroundColor: headerBg,
           backdropFilter: "blur(10px)",
         }}
       >
@@ -129,15 +152,16 @@ const Dashboard: React.FC<DashboardProps> = ({
               width: 32,
               height: 32,
               borderRadius: 999,
-              background:
-                "radial-gradient(circle at 0 0, rgba(56,189,248,0.9), rgba(15,23,42,1))",
+              background: darkMode
+                ? "radial-gradient(circle at 0 0, rgba(56,189,248,0.9), rgba(15,23,42,1))"
+                : "radial-gradient(circle at 0 0, rgba(56,189,248,0.9), #e5f2ff)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontWeight: 800,
               fontSize: 16,
-              color: "#0b1120",
-              boxShadow: "0 0 0 1px rgba(15,23,42,0.6)",
+              color: darkMode ? "#0b1120" : "#0f172a",
+              boxShadow: "0 0 0 1px rgba(15,23,42,0.2)",
             }}
           >
             WF
@@ -165,8 +189,15 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        {/* User + Logout */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        {/* User + Logout + Avatar menu */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            position: "relative",
+          }}
+        >
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 13, fontWeight: 500 }}>
               {user.username || "User"}
@@ -174,23 +205,29 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div style={{ fontSize: 11, opacity: 0.7 }}>{gmail}</div>
           </div>
 
-          <div
+          {/* Avatar (bấm để mở menu) */}
+          <button
+            type="button"
+            onClick={() => setIsAvatarMenuOpen((v) => !v)}
             style={{
               width: 32,
               height: 32,
               borderRadius: 999,
-              background:
-                "radial-gradient(circle at 20% 0, rgba(96,165,250,0.7), rgba(15,23,42,1))",
-              border: "1px solid #1f2937",
+              background: darkMode
+                ? "radial-gradient(circle at 20% 0, rgba(96,165,250,0.7), rgba(15,23,42,1))"
+                : "radial-gradient(circle at 20% 0, rgba(59,130,246,0.7), #e5f2ff)",
+              border: `1px solid ${headerBorder}`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontWeight: 700,
               fontSize: 14,
+              cursor: "pointer",
+              color: darkMode ? "#e5e7eb" : "#0f172a",
             }}
           >
             {avatarChar}
-          </div>
+          </button>
 
           {onLogout && (
             <button
@@ -198,10 +235,11 @@ const Dashboard: React.FC<DashboardProps> = ({
               style={{
                 padding: "8px 18px",
                 borderRadius: 999,
-                border: "1px solid #334155",
-                background:
-                  "linear-gradient(135deg, rgba(15,23,42,1), rgba(15,23,42,0.4))",
-                color: "#e5e7eb",
+                border: `1px solid ${darkMode ? "#334155" : "#cbd5f5"}`,
+                background: darkMode
+                  ? "linear-gradient(135deg, rgba(15,23,42,1), rgba(15,23,42,0.4))"
+                  : "linear-gradient(135deg, #ffffff, #e5e7eb)",
+                color: textColor,
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -211,6 +249,82 @@ const Dashboard: React.FC<DashboardProps> = ({
             >
               Log out
             </button>
+          )}
+
+          {/* MENU dưới avatar */}
+          {isAvatarMenuOpen && (
+            <div
+              style={{
+                position: "absolute",
+                top: 44,
+                right: 0,
+                width: 220,
+                borderRadius: 16,
+                border: `1px solid ${cardBorder}`,
+                backgroundColor: popupBg,
+                boxShadow: "0 18px 30px rgba(15,23,42,0.4)",
+                padding: 10,
+                zIndex: 50,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  opacity: 0.7,
+                  marginBottom: 8,
+                }}
+              >
+                Settings
+              </div>
+
+              {/* Dark mode toggle */}
+              <button
+                type="button"
+                onClick={() => {
+                  onToggleDarkMode?.();
+                }}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  padding: "6px 8px",
+                  borderRadius: 10,
+                  border: "none",
+                  backgroundColor: darkMode ? "rgba(15,23,42,0.7)" : "#f3f4f6",
+                  cursor: "pointer",
+                  color: textColor,
+                  fontSize: 13,
+                }}
+              >
+                <span>Dark mode</span>
+                <span
+                  style={{
+                    width: 34,
+                    height: 18,
+                    borderRadius: 999,
+                    backgroundColor: toggleBg,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    padding: 2,
+                    boxSizing: "border-box",
+                    transition: "background-color 0.2s ease",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: 999,
+                      backgroundColor: "#f9fafb",
+                      transform: toggleKnobTransform,
+                      transition: "transform 0.2s ease",
+                    }}
+                  />
+                </span>
+              </button>
+            </div>
           )}
         </div>
       </header>
@@ -248,7 +362,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <p
               style={{
                 fontSize: 13,
-                opacity: 0.7,
+                color: summaryTextSub,
                 maxWidth: 420,
               }}
             >
@@ -312,9 +426,10 @@ const Dashboard: React.FC<DashboardProps> = ({
             style={{
               padding: "14px 16px",
               borderRadius: 14,
-              border: "1px solid #1f2937",
-              background:
-                "radial-gradient(circle at 0 0, rgba(56,189,248,0.15), rgba(15,23,42,1))",
+              border: `1px solid ${cardBorder}`,
+              background: darkMode
+                ? "radial-gradient(circle at 0 0, rgba(56,189,248,0.15), rgba(15,23,42,1))"
+                : "radial-gradient(circle at 0 0, rgba(59,130,246,0.2), #ffffff)",
             }}
           >
             <div
@@ -335,9 +450,10 @@ const Dashboard: React.FC<DashboardProps> = ({
             style={{
               padding: "14px 16px",
               borderRadius: 14,
-              border: "1px solid #1f2937",
-              background:
-                "radial-gradient(circle at 0 0, rgba(34,197,94,0.18), rgba(15,23,42,1))",
+              border: `1px solid ${cardBorder}`,
+              background: darkMode
+                ? "radial-gradient(circle at 0 0, rgba(34,197,94,0.18), rgba(15,23,42,1))"
+                : "radial-gradient(circle at 0 0, rgba(34,197,94,0.18), #ffffff)",
             }}
           >
             <div
@@ -358,9 +474,10 @@ const Dashboard: React.FC<DashboardProps> = ({
             style={{
               padding: "14px 16px",
               borderRadius: 14,
-              border: "1px solid #1f2937",
-              background:
-                "radial-gradient(circle at 0 0, rgba(148,163,184,0.18), rgba(15,23,42,1))",
+              border: `1px solid ${cardBorder}`,
+              background: darkMode
+                ? "radial-gradient(circle at 0 0, rgba(148,163,184,0.18), rgba(15,23,42,1))"
+                : "radial-gradient(circle at 0 0, rgba(148,163,184,0.18), #ffffff)",
             }}
           >
             <div
@@ -381,9 +498,10 @@ const Dashboard: React.FC<DashboardProps> = ({
             style={{
               padding: "14px 16px",
               borderRadius: 14,
-              border: "1px solid #1f2937",
-              background:
-                "radial-gradient(circle at 0 0, rgba(248,250,252,0.05), rgba(15,23,42,1))",
+              border: `1px solid ${cardBorder}`,
+              background: darkMode
+                ? "radial-gradient(circle at 0 0, rgba(248,250,252,0.05), rgba(15,23,42,1))"
+                : "radial-gradient(circle at 0 0, rgba(248,250,252,0.4), #ffffff)",
             }}
           >
             <div
@@ -417,9 +535,10 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div
             style={{
               borderRadius: 18,
-              border: "1px solid #1f2937",
-              background:
-                "radial-gradient(circle at 0 0, rgba(148,163,184,0.16), rgba(15,23,42,1))",
+              border: `1px solid ${cardBorder}`,
+              background: darkMode
+                ? "radial-gradient(circle at 0 0, rgba(148,163,184,0.16), rgba(15,23,42,1))"
+                : "radial-gradient(circle at 0 0, rgba(148,163,184,0.12), #ffffff)",
               padding: 16,
             }}
           >
@@ -443,7 +562,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                 >
                   Danh sách node
                 </div>
-                <div style={{ fontSize: 12, opacity: 0.7 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: summaryTextSub,
+                  }}
+                >
                   Tổng {totalNodes} node – click vào từng node để xem chi tiết.
                 </div>
               </div>
@@ -467,6 +591,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     sensorLoaded={node.sensorLoaded}
                     onRemove={(devAddr) => setDeleteTarget(devAddr)}
                     onMoreDetails={onOpenNodeDetail}
+                    darkMode={darkMode}
                   />
                 ))}
               </div>
@@ -475,7 +600,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 style={{
                   marginTop: 24,
                   fontSize: 13,
-                  opacity: 0.7,
+                  color: summaryTextSub,
                 }}
               >
                 Chưa có node nào. Hãy bấm “Add node” để thêm DevAddr mới.
@@ -503,11 +628,12 @@ const Dashboard: React.FC<DashboardProps> = ({
             style={{
               width: "100%",
               maxWidth: 360,
-              backgroundColor: "#020617",
+              backgroundColor: popupBg,
               borderRadius: 16,
-              border: "1px solid #1f2937",
+              border: `1px solid ${cardBorder}`,
               boxShadow: "0 20px 40px rgba(15,23,42,0.9)",
               padding: 20,
+              color: textColor,
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -553,9 +679,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                     width: "100%",
                     padding: "8px 10px",
                     borderRadius: 10,
-                    border: "1px solid #4b5563",
-                    backgroundColor: "#020617",
-                    color: "#e5e7eb",
+                    border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
+                    backgroundColor: darkMode ? "#020617" : "#ffffff",
+                    color: textColor,
                     fontSize: 13,
                     outline: "none",
                   }}
@@ -567,7 +693,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div
                   style={{
                     fontSize: 12,
-                    color: "#fecaca",
+                    color: "#b91c1c",
                     marginBottom: 8,
                   }}
                 >
@@ -589,9 +715,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                   style={{
                     padding: "8px 12px",
                     borderRadius: 999,
-                    border: "1px solid #4b5563",
+                    border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
                     background: "transparent",
-                    color: "#e5e7eb",
+                    color: textColor,
                     fontSize: 12,
                     cursor: "pointer",
                   }}
@@ -637,11 +763,12 @@ const Dashboard: React.FC<DashboardProps> = ({
             style={{
               width: "100%",
               maxWidth: 320,
-              backgroundColor: "#020617",
+              backgroundColor: popupBg,
               borderRadius: 16,
-              border: "1px solid #1f2937",
+              border: `1px solid ${cardBorder}`,
               boxShadow: "0 20px 40px rgba(15,23,42,0.9)",
               padding: 20,
+              color: textColor,
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -678,9 +805,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                 style={{
                   padding: "7px 12px",
                   borderRadius: 999,
-                  border: "1px solid #4b5563",
+                  border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
                   background: "transparent",
-                  color: "#e5e7eb",
+                  color: textColor,
                   fontSize: 12,
                   cursor: "pointer",
                 }}

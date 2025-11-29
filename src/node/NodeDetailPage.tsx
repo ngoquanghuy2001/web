@@ -17,6 +17,8 @@ interface NodeDetailPageProps {
     user: UserInfo;
     sensorHistoryMap: Record<number, SensorData[]>;
     onBack: () => void;
+    darkMode?: boolean;
+    onToggleDarkMode?: () => void;
 }
 
 const HISTORY_STORAGE_KEY = "wildfire_history";
@@ -25,12 +27,15 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
     user,
     sensorHistoryMap,
     onBack,
+    darkMode = true,
+    onToggleDarkMode,
 }) => {
     const { devAddr } = useParams<{ devAddr: string }>();
     const devAddrNum = Number(devAddr);
 
     // history dùng cho bảng + biểu đồ
     const [history, setHistory] = useState<SensorData[]>([]);
+    const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
 
     // Đồng bộ history: ưu tiên từ sensorHistoryMap, nếu chưa có thì đọc từ localStorage.wildfire_history
     useEffect(() => {
@@ -110,28 +115,45 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
         [history]
     );
 
+    const bgRoot = darkMode ? "#020617" : "#f3f4f6";
+    const textColor = darkMode ? "#e5e7eb" : "#0f172a";
+    const borderColor = darkMode ? "#1f2937" : "#e5e7eb";
+    const headerBg = darkMode ? "rgba(2,6,23,0.96)" : "rgba(255,255,255,0.94)";
+    const statCardBg = darkMode
+        ? "radial-gradient(circle at 0 0, rgba(56,189,248,0.12), rgba(15,23,42,1))"
+        : "radial-gradient(circle at 0 0, rgba(56,189,248,0.16), #ffffff)";
+    const sectionBg = darkMode
+        ? "radial-gradient(circle at 0 0, rgba(148,163,184,0.16), rgba(15,23,42,1))"
+        : "radial-gradient(circle at 0 0, rgba(148,163,184,0.12), #ffffff)";
+    const popupBg = darkMode ? "#020617" : "#ffffff";
+    const cardBorder = borderColor;
+    const summaryTextSub = darkMode ? "rgba(148,163,184,0.75)" : "#6b7280";
+
+    const toggleKnobTransform = darkMode ? "translateX(18px)" : "translateX(0px)";
+    const toggleBg = darkMode ? "#22c55e" : "#9ca3af";
+
     return (
         <div
             style={{
                 minHeight: "100vh",
-                backgroundColor: "#020617",
-                color: "#e5e7eb",
+                backgroundColor: bgRoot,
+                color: textColor,
                 fontFamily:
                     '"Inter", system-ui, -apple-system, BlinkMacSystemFont,"Segoe UI", sans-serif',
                 display: "flex",
                 flexDirection: "column",
             }}
         >
-            {/* HEADER giống Dashboard */}
+            {/* HEADER giống Dashboard nhưng có menu avatar */}
             <header
                 style={{
                     height: 64,
-                    borderBottom: "1px solid #1f2937",
+                    borderBottom: `1px solid ${borderColor}`,
                     padding: "0 32px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    backgroundColor: "rgba(2,6,23,0.96)",
+                    backgroundColor: headerBg,
                     backdropFilter: "blur(10px)",
                     position: "sticky",
                     top: 0,
@@ -143,9 +165,9 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                         onClick={onBack}
                         style={{
                             borderRadius: 999,
-                            border: "1px solid #334155",
+                            border: `1px solid ${darkMode ? "#334155" : "#d1d5db"}`,
                             background: "transparent",
-                            color: "#e5e7eb",
+                            color: textColor,
                             padding: "6px 10px",
                             cursor: "pointer",
                             fontSize: 12,
@@ -170,30 +192,120 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     </div>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 16,
+                        position: "relative",
+                    }}
+                >
                     <div style={{ textAlign: "right" }}>
                         <div style={{ fontSize: 13, fontWeight: 500 }}>
                             {user.username || "User"}
                         </div>
                         <div style={{ fontSize: 11, opacity: 0.7 }}>{gmail}</div>
                     </div>
-                    <div
+
+                    {/* Avatar: click để mở menu */}
+                    <button
+                        type="button"
+                        onClick={() => setIsAvatarMenuOpen((v) => !v)}
                         style={{
                             width: 32,
                             height: 32,
                             borderRadius: "999px",
-                            border: "1px solid #334155",
+                            border: `1px solid ${borderColor}`,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             fontSize: 14,
                             fontWeight: 600,
-                            background:
-                                "radial-gradient(circle at 30% 0%, #38bdf8, #0f172a 70%)",
+                            background: darkMode
+                                ? "radial-gradient(circle at 30% 0%, #38bdf8, #0f172a 70%)"
+                                : "radial-gradient(circle at 30% 0%, #38bdf8, #e5f2ff 70%)",
+                            color: darkMode ? "#e5e7eb" : "#0f172a",
+                            cursor: "pointer",
                         }}
                     >
                         {avatarChar}
-                    </div>
+                    </button>
+
+                    {/* MENU settings dưới avatar */}
+                    {isAvatarMenuOpen && (
+                        <div
+                            style={{
+                                position: "absolute",
+                                top: 44,
+                                right: 0,
+                                width: 220,
+                                borderRadius: 16,
+                                border: `1px solid ${cardBorder}`,
+                                backgroundColor: popupBg,
+                                boxShadow: "0 18px 30px rgba(15,23,42,0.4)",
+                                padding: 10,
+                                zIndex: 50,
+                            }}
+                        >
+                            <div
+                                style={{
+                                    fontSize: 12,
+                                    opacity: 0.7,
+                                    marginBottom: 8,
+                                }}
+                            >
+                                Settings
+                            </div>
+
+                            {/* Dark mode toggle */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    onToggleDarkMode?.();
+                                }}
+                                style={{
+                                    width: "100%",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: 8,
+                                    padding: "6px 8px",
+                                    borderRadius: 10,
+                                    border: "none",
+                                    backgroundColor: darkMode ? "rgba(15,23,42,0.7)" : "#f3f4f6",
+                                    cursor: "pointer",
+                                    color: textColor,
+                                    fontSize: 13,
+                                }}
+                            >
+                                <span>Dark mode</span>
+                                <span
+                                    style={{
+                                        width: 34,
+                                        height: 18,
+                                        borderRadius: 999,
+                                        backgroundColor: toggleBg,
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        padding: 2,
+                                        boxSizing: "border-box",
+                                        transition: "background-color 0.2s ease",
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            width: 14,
+                                            height: 14,
+                                            borderRadius: 999,
+                                            backgroundColor: "#f9fafb",
+                                            transform: toggleKnobTransform,
+                                            transition: "transform 0.2s ease",
+                                        }}
+                                    />
+                                </span>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </header>
 
@@ -212,7 +324,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>
                         Node {devAddrNum} details
                     </h1>
-                    <p style={{ fontSize: 13, opacity: 0.7 }}>
+                    <p style={{ fontSize: 13, color: summaryTextSub }}>
                         Hiển thị tối đa 20 gói dữ liệu cảm biến gần nhất cho node này.
                     </p>
                 </section>
@@ -232,9 +344,8 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                             style={{
                                 padding: "14px 16px",
                                 borderRadius: 14,
-                                border: "1px solid #1f2937",
-                                background:
-                                    "radial-gradient(circle at 0 0, rgba(56,189,248,0.12), rgba(15,23,42,1))",
+                                border: `1px solid ${borderColor}`,
+                                background: statCardBg,
                             }}
                         >
                             <div
@@ -257,13 +368,13 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                 <section
                     style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))", // mỗi dòng 2 biểu đồ
+                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                         gap: 24,
                         marginBottom: 32,
                     }}
                 >
                     {/* Temperature */}
-                    <ChartCard title="Air temperature (°C)">
+                    <ChartCard title="Air temperature (°C)" darkMode={darkMode}>
                         {chartData.length === 0 ? (
                             <EmptyChartMessage />
                         ) : (
@@ -272,14 +383,23 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                     data={chartData}
                                     margin={{ top: 10, right: 10, bottom: 5, left: 0 }}
                                 >
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#2f3c4e" />
+                                    <CartesianGrid
+                                        strokeDasharray="3 3"
+                                        stroke={darkMode ? "#2f3c4e" : "#cbd5e1"}
+                                    />
                                     <XAxis
                                         dataKey="timestamp"
-                                        tick={{ fontSize: 10, fill: "#9ca3af" }}
+                                        tick={{
+                                            fontSize: 10,
+                                            fill: darkMode ? "#9ca3af" : "#4b5563",
+                                        }}
                                         padding={{ left: 0, right: 0 }}
                                     />
                                     <YAxis
-                                        tick={{ fontSize: 10, fill: "#9ca3af" }}
+                                        tick={{
+                                            fontSize: 10,
+                                            fill: darkMode ? "#9ca3af" : "#4b5563",
+                                        }}
                                         domain={["dataMin - 1", "dataMax + 1"]}
                                     />
                                     <Tooltip
@@ -304,7 +424,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     </ChartCard>
 
                     {/* Humidity */}
-                    <ChartCard title="Air humidity (%)">
+                    <ChartCard title="Air humidity (%)" darkMode={darkMode}>
                         {chartData.length === 0 ? (
                             <EmptyChartMessage />
                         ) : (
@@ -313,14 +433,23 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                     data={chartData}
                                     margin={{ top: 10, right: 10, bottom: 5, left: 0 }}
                                 >
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#2f3c4e" />
+                                    <CartesianGrid
+                                        strokeDasharray="3 3"
+                                        stroke={darkMode ? "#2f3c4e" : "#cbd5e1"}
+                                    />
                                     <XAxis
                                         dataKey="timestamp"
-                                        tick={{ fontSize: 10, fill: "#9ca3af" }}
+                                        tick={{
+                                            fontSize: 10,
+                                            fill: darkMode ? "#9ca3af" : "#4b5563",
+                                        }}
                                         padding={{ left: 0, right: 0 }}
                                     />
                                     <YAxis
-                                        tick={{ fontSize: 10, fill: "#9ca3af" }}
+                                        tick={{
+                                            fontSize: 10,
+                                            fill: darkMode ? "#9ca3af" : "#4b5563",
+                                        }}
                                         domain={["dataMin - 1", "dataMax + 1"]}
                                     />
                                     <Tooltip
@@ -345,7 +474,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     </ChartCard>
 
                     {/* Radiant temperature */}
-                    <ChartCard title="Radiant temperature (MaxT, °C)">
+                    <ChartCard title="Radiant temperature (MaxT, °C)" darkMode={darkMode}>
                         {chartData.length === 0 ? (
                             <EmptyChartMessage />
                         ) : (
@@ -354,14 +483,23 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                     data={chartData}
                                     margin={{ top: 10, right: 10, bottom: 5, left: 0 }}
                                 >
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#2f3c4e" />
+                                    <CartesianGrid
+                                        strokeDasharray="3 3"
+                                        stroke={darkMode ? "#2f3c4e" : "#cbd5e1"}
+                                    />
                                     <XAxis
                                         dataKey="timestamp"
-                                        tick={{ fontSize: 10, fill: "#9ca3af" }}
+                                        tick={{
+                                            fontSize: 10,
+                                            fill: darkMode ? "#9ca3af" : "#4b5563",
+                                        }}
                                         padding={{ left: 0, right: 0 }}
                                     />
                                     <YAxis
-                                        tick={{ fontSize: 10, fill: "#9ca3af" }}
+                                        tick={{
+                                            fontSize: 10,
+                                            fill: darkMode ? "#9ca3af" : "#4b5563",
+                                        }}
                                         domain={["dataMin - 1", "dataMax + 1"]}
                                     />
                                     <Tooltip
@@ -386,7 +524,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     </ChartCard>
 
                     {/* CO2 */}
-                    <ChartCard title="CO₂ concentration (ppm)">
+                    <ChartCard title="CO₂ concentration (ppm)" darkMode={darkMode}>
                         {chartData.length === 0 ? (
                             <EmptyChartMessage />
                         ) : (
@@ -395,14 +533,23 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                     data={chartData}
                                     margin={{ top: 10, right: 10, bottom: 5, left: 0 }}
                                 >
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#2f3c4e" />
+                                    <CartesianGrid
+                                        strokeDasharray="3 3"
+                                        stroke={darkMode ? "#2f3c4e" : "#cbd5e1"}
+                                    />
                                     <XAxis
                                         dataKey="timestamp"
-                                        tick={{ fontSize: 10, fill: "#9ca3af" }}
+                                        tick={{
+                                            fontSize: 10,
+                                            fill: darkMode ? "#9ca3af" : "#4b5563",
+                                        }}
                                         padding={{ left: 0, right: 0 }}
                                     />
                                     <YAxis
-                                        tick={{ fontSize: 10, fill: "#9ca3af" }}
+                                        tick={{
+                                            fontSize: 10,
+                                            fill: darkMode ? "#9ca3af" : "#4b5563",
+                                        }}
                                         domain={["dataMin - 1", "dataMax + 1"]}
                                     />
                                     <Tooltip
@@ -442,9 +589,8 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                     <div
                         style={{
                             borderRadius: 18,
-                            border: "1px solid #1f2937",
-                            background:
-                                "radial-gradient(circle at 0 0, rgba(148,163,184,0.16), rgba(15,23,42,1))",
+                            border: `1px solid ${borderColor}`,
+                            background: sectionBg,
                             overflow: "hidden",
                         }}
                     >
@@ -458,7 +604,9 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                             <thead>
                                 <tr
                                     style={{
-                                        backgroundColor: "rgba(15,23,42,0.9)",
+                                        backgroundColor: darkMode
+                                            ? "rgba(15,23,42,0.9)"
+                                            : "rgba(226,232,240,0.9)",
                                     }}
                                 >
                                     {[
@@ -476,7 +624,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                                 padding: "10px 12px",
                                                 textAlign: "left",
                                                 fontWeight: 600,
-                                                borderBottom: "1px solid #1f2937",
+                                                borderBottom: `1px solid ${borderColor}`,
                                             }}
                                         >
                                             {h}
@@ -504,9 +652,15 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                     <tr
                                         key={idx}
                                         style={{
-                                            borderBottom: "1px solid #111827",
-                                            backgroundColor:
-                                                idx % 2 === 0 ? "rgba(15,23,42,0.85)" : "transparent",
+                                            borderBottom: `1px solid ${darkMode ? "#111827" : "#e5e7eb"
+                                                }`,
+                                            backgroundColor: darkMode
+                                                ? idx % 2 === 0
+                                                    ? "rgba(15,23,42,0.85)"
+                                                    : "transparent"
+                                                : idx % 2 === 0
+                                                    ? "rgba(249,250,251,1)"
+                                                    : "rgba(255,255,255,1)",
                                         }}
                                     >
                                         <td style={{ padding: "8px 12px" }}>
@@ -527,7 +681,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                         <td
                                             style={{
                                                 padding: "8px 12px",
-                                                color: d.fire ? "#fecaca" : "#bbf7d0",
+                                                color: d.fire ? "#b91c1c" : "#16a34a",
                                                 fontWeight: 600,
                                             }}
                                         >
@@ -550,16 +704,18 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
 /**
  * Card khung cho mỗi biểu đồ – để code gọn lại
  */
-const ChartCard: React.FC<{ title: string; children: React.ReactNode }> = ({
-    title,
-    children,
-}) => (
+const ChartCard: React.FC<{
+    title: string;
+    children: React.ReactNode;
+    darkMode?: boolean;
+}> = ({ title, children, darkMode = true }) => (
     <div
         style={{
             borderRadius: 18,
-            border: "1px solid #1f2937",
-            background:
-                "radial-gradient(circle at 0 0, rgba(148,163,184,0.16), rgba(15,23,42,1))",
+            border: `1px solid ${darkMode ? "#1f2937" : "#e5e7eb"}`,
+            background: darkMode
+                ? "radial-gradient(circle at 0 0, rgba(148,163,184,0.16), rgba(15,23,42,1))"
+                : "radial-gradient(circle at 0 0, rgba(148,163,184,0.12), #ffffff)",
             padding: "12px 14px",
             minHeight: 280,
             display: "flex",
@@ -579,7 +735,8 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode }> = ({
             style={{
                 flex: 1,
                 borderRadius: 12,
-                border: "1px dashed rgba(148,163,184,0.3)",
+                border: `1px dashed ${darkMode ? "rgba(148,163,184,0.3)" : "rgba(148,163,184,0.5)"
+                    }`,
                 padding: 8,
             }}
         >
