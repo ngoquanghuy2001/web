@@ -4,7 +4,6 @@ import {
   signInWithRedirect,
   signOut,
 } from "@aws-amplify/auth";
-import { COGNITO_DOMAIN, COGNITO_CLIENT_ID, REDIRECT_URI } from "./awsConfig";
 
 export interface UserInfo {
   username: string;

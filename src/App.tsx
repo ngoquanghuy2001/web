@@ -21,10 +21,8 @@ const App: React.FC = () => {
   const [sensorData, setSensorData] = useState<SensorData | null>(null);
   const [sensorLoaded, setSensorLoaded] = useState(false);
 
-  // DevAddr đang nghe realtime (tạm fix cứng, sau này cho nhập từ UI)
   const devAddr = 3;
 
-  // Bước 1: kiểm tra session Cognito
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -37,7 +35,6 @@ const App: React.FC = () => {
         setJwt(token);
         setUser(info);
 
-        // Xoá ?code=&state= khỏi URL cho đẹp
         const url = new URL(window.location.href);
         if (url.search) {
           url.search = "";
@@ -51,10 +48,8 @@ const App: React.FC = () => {
         const hasError = url.searchParams.has("error");
 
         if (!hasCode && !hasError) {
-          // Chưa từng login → redirect sang Hosted UI
           await loginWithHostedUI();
         } else {
-          // ĐÃ có code (hoặc error) mà vẫn fail → không redirect nữa để tránh loop
           setErrorMsg(
             "Không thể lấy token từ Cognito. Vui lòng kiểm tra cấu hình App client / /oauth2/token."
           );
@@ -67,7 +62,6 @@ const App: React.FC = () => {
     void initAuth();
   }, []);
 
-  // Bước 2: subscribe realtime onNodeDataAdded
   useEffect(() => {
     if (!jwt) return;
 
@@ -104,7 +98,6 @@ const App: React.FC = () => {
       },
     });
 
-    // cleanup khi unmount hoặc khi jwt/devAddr đổi
     return () => {
       if (subscription && typeof subscription.unsubscribe === "function") {
         subscription.unsubscribe();
@@ -123,12 +116,10 @@ const App: React.FC = () => {
     }
   };
 
-  // Loading bước đầu
   if (loading && !jwt) {
     return <div style={{ padding: 16 }}>Đang kiểm tra phiên đăng nhập...</div>;
   }
 
-  // Nếu vì lý do gì đó vẫn chưa có jwt
   if (!jwt) {
     return (
       <div style={{ padding: 16 }}>
@@ -152,7 +143,6 @@ const App: React.FC = () => {
           marginBottom: 24,
         }}
       >
-        <h1>Dashboard (Cognito + AppSync realtime)</h1>
         <button onClick={handleLogout}>Đăng xuất</button>
       </div>
 
@@ -163,7 +153,7 @@ const App: React.FC = () => {
       {user && (
         <Dashboard
           user={user}
-          onLogout={handleLogout}
+          // onLogout={handleLogout}
           sensorData={sensorData}
           sensorLoaded={sensorLoaded}
           devAddr={devAddr}

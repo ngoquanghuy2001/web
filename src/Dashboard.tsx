@@ -8,7 +8,6 @@ export interface UserInfo {
 
 interface DashboardProps {
   user: UserInfo;
-  onLogout: () => void;
   sensorData: SensorData | null;
   sensorLoaded: boolean;
   devAddr: number;
@@ -16,41 +15,20 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({
   user,
-  onLogout,
   sensorData,
   sensorLoaded,
   devAddr,
 }) => {
-  const { username, attributes } = user;
+  // Lấy gmail từ attributes
+  const gmail = user.attributes.email ?? "Không có email";
 
   return (
     <div style={{ maxWidth: 800, margin: "40px auto", padding: 16 }}>
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 24,
-        }}
-      >
-        <h1>Dashboard</h1>
-        <button onClick={onLogout}>Đăng xuất</button>
-      </div>
-
-      {/* Thông tin user */}
-      <h2>Thông tin người dùng</h2>
+      {/* Chỉ hiển thị Gmail */}
+      <h2>Thông tin tài khoản</h2>
       <p>
-        <strong>Username:</strong> {username}
+        <strong>Email:</strong> {gmail}
       </p>
-
-      <h3>Thuộc tính (attributes) từ Cognito</h3>
-      <ul>
-        {Object.entries(attributes).map(([key, value]) => (
-          <li key={key}>
-            <strong>{key}</strong>: {value}
-          </li>
-        ))}
-      </ul>
 
       {/* Dữ liệu cảm biến realtime */}
       <h2 style={{ marginTop: 32 }}>
@@ -89,7 +67,8 @@ const Dashboard: React.FC<DashboardProps> = ({
             <strong>Độ ẩm:</strong> {sensorData.humidity ?? "N/A"} %
           </p>
           <p>
-            <strong>CO₂:</strong> {sensorData.co2 ?? "N/A"} ppm</p>
+            <strong>CO₂:</strong> {sensorData.co2 ?? "N/A"} ppm
+          </p>
           <p>
             <strong>Pin:</strong> {sensorData.battery ?? "N/A"} %
           </p>

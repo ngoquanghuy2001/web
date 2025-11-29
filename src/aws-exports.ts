@@ -1,22 +1,23 @@
-const awsconfig = {
-  aws_project_region: "ap-southeast-2",
+import { SCOPE, APPSYNC_ENDPOINT, COGNITO_CLIENT_ID, REDIRECT_URI, RESPONSE_TYPE, COGNITO_DOMAIN, PROJECT_REGION, COGNITO_REGION, USER_POOL_ID, APPSYNC_REGION, AUTHENTICATION_TYPE } from "./awsConfig";
 
-  aws_cognito_region: "ap-southeast-2",
-  aws_user_pools_id: "ap-southeast-2_jT7CAyU2P",
-  aws_user_pools_web_client_id: "39jjer944lr0vpsbt4v7aejno8",
+const awsconfig = {
+  aws_project_region: PROJECT_REGION,
+
+  aws_cognito_region: COGNITO_REGION,
+  aws_user_pools_id: USER_POOL_ID,
+  aws_user_pools_web_client_id: COGNITO_CLIENT_ID,
 
   oauth: {
-    domain: "ap-southeast-2jt7cayu2p.auth.ap-southeast-2.amazoncognito.com",
-    scope: ["email", "openid", "profile"],
-    redirectSignIn: "http://localhost:3000/",
-    redirectSignOut: "http://localhost:3000/",
-    responseType: "code",
+    domain: COGNITO_DOMAIN,
+    scope: SCOPE,
+    redirectSignIn: REDIRECT_URI,
+    redirectSignOut: REDIRECT_URI,
+    responseType: RESPONSE_TYPE,
   },
 
-  aws_appsync_graphqlEndpoint:
-    "https://yuxnxoklonbarnboiyirs233we.appsync-api.ap-southeast-2.amazonaws.com/graphql",
-  aws_appsync_region: "ap-southeast-2",
-  aws_appsync_authenticationType: "AMAZON_COGNITO_USER_POOLS",
+  aws_appsync_graphqlEndpoint: APPSYNC_ENDPOINT,
+  aws_appsync_region: APPSYNC_REGION,
+  aws_appsync_authenticationType: AUTHENTICATION_TYPE,
 };
 
 export default awsconfig;

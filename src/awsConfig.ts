@@ -1,11 +1,17 @@
 // === COGNITO HOSTED UI ===
-export const COGNITO_DOMAIN =
-  "ap-southeast-2jt7cayu2p.auth.ap-southeast-2.amazoncognito.com";
+export const COGNITO_DOMAIN = "ap-southeast-2jt7cayu2p.auth.ap-southeast-2.amazoncognito.com";
 
 export const COGNITO_CLIENT_ID = "39jjer944lr0vpsbt4v7aejno8";
 
 export const REDIRECT_URI = "http://localhost:3000/";
+export const RESPONSE_TYPE = "code";
+export const PROJECT_REGION = "ap-southeast-2";
+export const COGNITO_REGION = "ap-southeast-2";
+export const APPSYNC_REGION = "ap-southeast-2";
+export const AUTHENTICATION_TYPE = "AMAZON_COGNITO_USER_POOLS";
+export const SCOPE = ["email", "openid", "profile"];
+// === USER POOL ===
+export const USER_POOL_ID = "ap-southeast-2_jT7CAyU2P";
 
 // === APPSYNC GRAPHQL ===
-export const APPSYNC_ENDPOINT =
-  "https://yuxnxoklonbarnboiyirs233we.appsync-api.ap-southeast-2.amazonaws.com/graphql";
+export const APPSYNC_ENDPOINT = "https://yuxnxoklonbarnboiyirs233we.appsync-api.ap-southeast-2.amazonaws.com/graphql";
