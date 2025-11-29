@@ -6,6 +6,7 @@ export interface NodeCardProps {
     sensorData: SensorData | null;
     sensorLoaded: boolean;
     onRemove?: (devAddr: number) => void;
+    onMoreDetails?: (devAddr: number) => void;
 }
 
 const formatValue = (value?: number | null, unit?: string) =>
@@ -16,6 +17,7 @@ const NodeCard: React.FC<NodeCardProps> = ({
     sensorData,
     sensorLoaded,
     onRemove,
+    onMoreDetails,
 }) => {
     const temperature = sensorData?.temperature;
     const humidity = sensorData?.humidity;
@@ -276,9 +278,11 @@ const NodeCard: React.FC<NodeCardProps> = ({
                         fontWeight: 500,
                         color: "#e5e7eb",
                     }}
+                    onClick={() => onMoreDetails?.(devAddr)}
                 >
                     More details
                 </button>
+
 
                 {isWarning && (
                     <div

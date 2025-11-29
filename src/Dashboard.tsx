@@ -19,6 +19,7 @@ interface DashboardProps {
   onLogout?: () => void;
   onAddNode?: (devAddr: number) => void;
   onRemoveNode?: (devAddr: number) => void;
+  onOpenNodeDetail?: (devAddr: number) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
@@ -27,6 +28,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   onLogout,
   onAddNode,
   onRemoveNode,
+  onOpenNodeDetail,
 }) => {
   const gmail = user.attributes.email ?? "Không có email";
 
@@ -396,6 +398,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 sensorData={node.sensorData}
                 sensorLoaded={node.sensorLoaded}
                 onRemove={(id) => setDeleteTarget(id)}
+                onMoreDetails={onOpenNodeDetail}
               />
             ))}
 

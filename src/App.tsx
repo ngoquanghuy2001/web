@@ -1,3 +1,4 @@
+// src/App.tsx
 import React, { useEffect, useState } from "react";
 import {
   loginWithHostedUI,
@@ -9,11 +10,16 @@ import {
 import Dashboard, { DashboardNode } from "./Dashboard";
 import { SensorData } from "./api/appsyncClient";
 import { generateClient } from "aws-amplify/api";
+import { Routes, Route, useNavigate } from "react-router-dom";
+import NodeDetailPage from "./node/NodeDetailPage";
 
 const client = generateClient();
+
 const LOCAL_STORAGE_KEY = "wildfire_dashboard_nodes";
+const HISTORY_STORAGE_KEY = "wildfire_history";
 
 const App: React.FC = () => {
+  const navigate = useNavigate();
   const [jwt, setJwt] = useState<string | null>(null);
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,6 +30,9 @@ const App: React.FC = () => {
   >({});
   const [sensorLoadedMap, setSensorLoadedMap] = useState<
     Record<number, boolean>
+  >({});
+  const [sensorHistoryMap, setSensorHistoryMap] = useState<
+    Record<number, SensorData[]>
   >({});
 
   // ============================
@@ -42,10 +51,96 @@ const App: React.FC = () => {
     return [1, 2]; // mặc định
   });
 
-  // Hàm ghi localStorage
-  const saveToLocalStorage = (arr: number[]) => {
+  const saveDevAddrsToLocalStorage = (arr: number[]) => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(arr));
   };
+
+  // ============================
+  // Load history từ localStorage lúc mở web
+  // ============================
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return;
+
+      const clean: Record<number, SensorData[]> = {};
+
+      for (const [key, value] of Object.entries(parsed)) {
+        const numKey = Number(key);
+        if (!Number.isInteger(numKey)) continue;
+        if (!Array.isArray(value)) continue;
+
+        const arr = (value as any[]).filter(
+          (item) =>
+            item &&
+            typeof item === "object" &&
+            typeof (item as any).DevAddr === "number"
+        ) as SensorData[];
+
+        if (arr.length > 0) {
+          clean[numKey] = arr.slice(0, 20);
+        }
+      }
+
+      setSensorHistoryMap(clean);
+    } catch (e) {
+      console.error("Không đọc được history từ localStorage", e);
+    }
+  }, []);
+
+  // Mỗi khi history thay đổi -> lưu lại localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        HISTORY_STORAGE_KEY,
+        JSON.stringify(sensorHistoryMap)
+      );
+    } catch (e) {
+      console.error("Không lưu được history vào localStorage", e);
+    }
+  }, [sensorHistoryMap]);
+
+  // Dùng history để fill data cho NodeCard nếu chưa có gói tin mới
+  useEffect(() => {
+    // fill sensorDataMap
+    setSensorDataMap((prev) => {
+      const next = { ...prev };
+      let changed = false;
+
+      devAddrs.forEach((addr) => {
+        if (!next[addr]) {
+          const history = sensorHistoryMap[addr];
+          if (history && history.length > 0) {
+            next[addr] = history[0]; // bản mới nhất
+            changed = true;
+          }
+        }
+      });
+
+      return changed ? next : prev;
+    });
+
+    // fill sensorLoadedMap
+    setSensorLoadedMap((prev) => {
+      const next = { ...prev };
+      let changed = false;
+
+      devAddrs.forEach((addr) => {
+        if (!next[addr]) {
+          const history = sensorHistoryMap[addr];
+          if (history && history.length > 0) {
+            next[addr] = true;
+            changed = true;
+          }
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [devAddrs, sensorHistoryMap]);
 
   // ============================
   // Handle Add Node
@@ -62,7 +157,7 @@ const App: React.FC = () => {
         return prev;
       }
       const updated = [...prev, devAddr];
-      saveToLocalStorage(updated);
+      saveDevAddrsToLocalStorage(updated);
       return updated;
     });
   };
@@ -73,17 +168,21 @@ const App: React.FC = () => {
   const handleRemoveNode = (devAddr: number) => {
     setDevAddrs((prev) => {
       const updated = prev.filter((id) => id !== devAddr);
-      saveToLocalStorage(updated);
+      saveDevAddrsToLocalStorage(updated);
       return updated;
     });
 
-    // xoá data map (không bắt buộc)
     setSensorDataMap((prev) => {
       const next = { ...prev };
       delete next[devAddr];
       return next;
     });
     setSensorLoadedMap((prev) => {
+      const next = { ...prev };
+      delete next[devAddr];
+      return next;
+    });
+    setSensorHistoryMap((prev) => {
       const next = { ...prev };
       delete next[devAddr];
       return next;
@@ -161,6 +260,8 @@ const App: React.FC = () => {
           const newData = response?.data?.onNodeDataAdded;
           if (!newData) return;
 
+          console.log("Dữ liệu mới DevAddr", addr, newData);
+
           setSensorDataMap((prev) => ({
             ...prev,
             [addr]: newData,
@@ -169,7 +270,15 @@ const App: React.FC = () => {
             ...prev,
             [addr]: true,
           }));
+
+          // Lưu history 20 bản mới nhất
+          setSensorHistoryMap((prev) => {
+            const old = prev[addr] ?? [];
+            const updated = [newData, ...old].slice(0, 20);
+            return { ...prev, [addr]: updated };
+          });
         },
+
         error: (error: unknown) => {
           console.error("Lỗi subscription cho DevAddr", addr, error);
         },
@@ -192,10 +301,10 @@ const App: React.FC = () => {
       setUser(null);
       setSensorDataMap({});
       setSensorLoadedMap({});
-
-      // reset localStorage về mặc định
-      saveToLocalStorage([1, 2]);
+      setSensorHistoryMap({});
+      saveDevAddrsToLocalStorage([1, 2]);
       setDevAddrs([1, 2]);
+      localStorage.removeItem(HISTORY_STORAGE_KEY);
     }
   };
 
@@ -222,13 +331,31 @@ const App: React.FC = () => {
   }));
 
   return (
-    <Dashboard
-      user={user as UserInfo}
-      nodes={nodes}
-      onLogout={handleLogout}
-      onAddNode={handleAddNode}
-      onRemoveNode={handleRemoveNode}
-    />
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <Dashboard
+            user={user as UserInfo}
+            nodes={nodes}
+            onLogout={handleLogout}
+            onAddNode={handleAddNode}
+            onRemoveNode={handleRemoveNode}
+            onOpenNodeDetail={(devAddr) => navigate(`/node/${devAddr}`)}
+          />
+        }
+      />
+      <Route
+        path="/node/:devAddr"
+        element={
+          <NodeDetailPage
+            user={user as UserInfo}
+            sensorHistoryMap={sensorHistoryMap}
+            onBack={() => navigate("/")}
+          />
+        }
+      />
+    </Routes>
   );
 };
 
