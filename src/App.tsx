@@ -15,7 +15,9 @@ import NodeDetailPage from "./node/NodeDetailPage";
 
 const client = generateClient();
 
+// Lưu danh sách DevAddr
 const LOCAL_STORAGE_KEY = "wildfire_dashboard_nodes";
+// Lưu toàn bộ history theo dạng map { [devAddr]: SensorData[] }
 const HISTORY_STORAGE_KEY = "wildfire_history";
 
 const App: React.FC = () => {
@@ -47,8 +49,10 @@ const App: React.FC = () => {
           return arr;
         }
       }
-    } catch { }
-    return [1, 2]; // mặc định
+    } catch {
+      // ignore parse error, dùng mặc định
+    }
+    return [1, 2]; // mặc định nếu chưa có gì
   });
 
   const saveDevAddrsToLocalStorage = (arr: number[]) => {
@@ -81,6 +85,7 @@ const App: React.FC = () => {
         ) as SensorData[];
 
         if (arr.length > 0) {
+          // chỉ giữ tối đa 20 record / node
           clean[numKey] = arr.slice(0, 20);
         }
       }
@@ -103,9 +108,9 @@ const App: React.FC = () => {
     }
   }, [sensorHistoryMap]);
 
-  // Dùng history để fill data cho NodeCard nếu chưa có gói tin mới
+  // Dùng history để fill data cho NodeCard nếu vừa reload mà chưa có gói tin mới
   useEffect(() => {
-    // fill sensorDataMap
+    // fill sensorDataMap từ record mới nhất trong history
     setSensorDataMap((prev) => {
       const next = { ...prev };
       let changed = false;
@@ -123,7 +128,7 @@ const App: React.FC = () => {
       return changed ? next : prev;
     });
 
-    // fill sensorLoadedMap
+    // fill sensorLoadedMap để UI biết là node này đã có dữ liệu
     setSensorLoadedMap((prev) => {
       const next = { ...prev };
       let changed = false;
@@ -166,12 +171,14 @@ const App: React.FC = () => {
   // Handle Remove Node
   // ============================
   const handleRemoveNode = (devAddr: number) => {
+    // Xoá DevAddr khỏi danh sách
     setDevAddrs((prev) => {
       const updated = prev.filter((id) => id !== devAddr);
       saveDevAddrsToLocalStorage(updated);
       return updated;
     });
 
+    // Xoá state realtime
     setSensorDataMap((prev) => {
       const next = { ...prev };
       delete next[devAddr];
@@ -182,6 +189,7 @@ const App: React.FC = () => {
       delete next[devAddr];
       return next;
     });
+    // Xoá luôn history trong RAM (localStorage sẽ được sync qua effect phía trên)
     setSensorHistoryMap((prev) => {
       const next = { ...prev };
       delete next[devAddr];
@@ -204,6 +212,7 @@ const App: React.FC = () => {
         setJwt(token);
         setUser(info);
 
+        // remove query params (code, state...) khỏi URL
         const url = new URL(window.location.href);
         if (url.search) {
           url.search = "";
@@ -217,6 +226,7 @@ const App: React.FC = () => {
         const hasError = url.searchParams.has("error");
 
         if (!hasCode && !hasError) {
+          // chưa login -> redirect sang Cognito
           await loginWithHostedUI();
         } else {
           setErrorMsg("Không thể lấy token từ Cognito.");
@@ -262,6 +272,7 @@ const App: React.FC = () => {
 
           console.log("Dữ liệu mới DevAddr", addr, newData);
 
+          // Cập nhật realtime cho Dashboard
           setSensorDataMap((prev) => ({
             ...prev,
             [addr]: newData,
@@ -271,7 +282,7 @@ const App: React.FC = () => {
             [addr]: true,
           }));
 
-          // Lưu history 20 bản mới nhất
+          // Lưu history (20 bản mới nhất) để dùng cho bảng + biểu đồ + localStorage
           setSensorHistoryMap((prev) => {
             const old = prev[addr] ?? [];
             const updated = [newData, ...old].slice(0, 20);
@@ -308,6 +319,9 @@ const App: React.FC = () => {
     }
   };
 
+  // ============================
+  // Render
+  // ============================
   if (loading && !jwt) {
     return <div style={{ padding: 16 }}>Đang kiểm tra phiên đăng nhập...</div>;
   }
@@ -324,6 +338,7 @@ const App: React.FC = () => {
     );
   }
 
+  // Chuẩn hoá dữ liệu cho Dashboard
   const nodes: DashboardNode[] = devAddrs.map((addr) => ({
     devAddr: addr,
     sensorData: sensorDataMap[addr] ?? null,

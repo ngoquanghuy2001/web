@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SensorData } from "./api/appsyncClient";
 import NodeCard from "./node/NodeCard";
 
@@ -36,6 +36,15 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [devAddrInput, setDevAddrInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setNow(Date.now());
+    }, 10000);
+
+    return () => window.clearInterval(id);
+  }, []);
 
   const openModal = () => {
     setDevAddrInput("");
@@ -60,17 +69,26 @@ const Dashboard: React.FC<DashboardProps> = ({
     setIsModalOpen(false);
   };
 
+  const isNodeActive = (node: DashboardNode) => {
+    const ts = node.sensorData?.timestamp;
+    if (!ts) return false;
+
+    const ms = new Date(ts).getTime();
+    if (Number.isNaN(ms)) return false;
+
+    // Active nếu node nhận dữ liệu trong vòng 60 giây gần nhất
+    return now - ms <= 60_000;
+  };
+
   // Các số liệu tổng quan
   const totalNodes = nodes.length;
-  const activeNodes = nodes.filter(
-    (n) => n.sensorLoaded && n.sensorData
-  ).length;
+  const activeNodes = nodes.filter(isNodeActive).length;
+  const inactiveNodes = totalNodes - activeNodes;
   const lastUpdate = (() => {
     const timestamps = nodes
       .map((n) => n.sensorData?.timestamp)
       .filter((t): t is string => !!t);
     if (!timestamps.length) return "Chưa có dữ liệu";
-    // Lấy timestamp mới nhất (chuỗi, tạm coi so sánh string là đủ)
     return timestamps.sort().reverse()[0];
   })();
 
@@ -81,7 +99,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       style={{
         minHeight: "100vh",
         backgroundColor: "#020617", // slate-950
-        color: "#e5e7eb", // text-slate-200
+        color: "#e5e7eb",
         fontFamily:
           '"Inter", system-ui, -apple-system, BlinkMacSystemFont,"Segoe UI", sans-serif',
         display: "flex",
@@ -104,31 +122,39 @@ const Dashboard: React.FC<DashboardProps> = ({
           backdropFilter: "blur(10px)",
         }}
       >
-        {/* Logo + tên hệ thống */}
+        {/* Logo + Title */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div
             style={{
               width: 32,
               height: 32,
-              borderRadius: 8,
+              borderRadius: 999,
               background:
-                "radial-gradient(circle at 0% 0%, #22c55e, #0ea5e9 60%, #1d4ed8 100%)",
+                "radial-gradient(circle at 0 0, rgba(56,189,248,0.9), rgba(15,23,42,1))",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 18,
               fontWeight: 800,
+              fontSize: 16,
+              color: "#0b1120",
+              boxShadow: "0 0 0 1px rgba(15,23,42,0.6)",
             }}
           >
-            W
+            WF
           </div>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 600 }}>
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 600,
+                letterSpacing: 0.5,
+              }}
+            >
               Wildfire Monitoring
             </div>
             <div
               style={{
-                fontSize: 11,
+                fontSize: 12,
                 opacity: 0.7,
                 textTransform: "uppercase",
                 letterSpacing: 1,
@@ -147,19 +173,20 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div style={{ fontSize: 11, opacity: 0.7 }}>{gmail}</div>
           </div>
+
           <div
             style={{
               width: 32,
               height: 32,
-              borderRadius: "999px",
-              border: "1px solid #334155",
+              borderRadius: 999,
+              background:
+                "radial-gradient(circle at 20% 0, rgba(96,165,250,0.7), rgba(15,23,42,1))",
+              border: "1px solid #1f2937",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              fontWeight: 700,
               fontSize: 14,
-              fontWeight: 600,
-              background:
-                "radial-gradient(circle at 30% 0%, #38bdf8, #0f172a 70%)",
             }}
           >
             {avatarChar}
@@ -198,53 +225,56 @@ const Dashboard: React.FC<DashboardProps> = ({
           margin: "0 auto",
         }}
       >
-        {/* Title + toolbar */}
+        {/* TOP SECTION: title + Add node */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "flex-end",
-            marginBottom: 24,
             gap: 16,
+            marginBottom: 24,
+            flexWrap: "wrap",
           }}
         >
           <div>
             <h1
               style={{
-                fontSize: 28,
+                fontSize: 24,
                 fontWeight: 700,
-                margin: 0,
+                marginBottom: 4,
               }}
             >
               Dashboard
             </h1>
             <p
               style={{
-                margin: "6px 0 0",
                 fontSize: 13,
                 opacity: 0.7,
+                maxWidth: 420,
               }}
             >
-              Giám sát các node cảm biến môi trường theo thời gian thực.
+              Giám sát trạng thái các node cảm biến (DevAddr) theo thời gian
+              thực. Bạn có thể thêm / xoá node và xem chi tiết từng node.
             </p>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* sau này có thể thêm 1 nút Filter ở đây */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "flex-end",
+            }}
+          >
             <button
+              type="button"
               onClick={openModal}
               style={{
-                padding: "8px 16px",
-                borderRadius: 8,
+                padding: "10px 18px",
+                borderRadius: 999,
                 border: "none",
-                cursor: "pointer",
-                fontWeight: 600,
-                fontSize: 13,
-                display: "flex",
+                display: "inline-flex",
                 alignItems: "center",
-                gap: 6,
-                background:
-                  "linear-gradient(135deg,#22c55e,#16a34a)",
+                gap: 8,
+                background: "linear-gradient(135deg,#22c55e,#16a34a)",
                 boxShadow: "0 8px 20px rgba(34,197,94,0.35)",
                 color: "#f9fafb",
               }}
@@ -330,6 +360,29 @@ const Dashboard: React.FC<DashboardProps> = ({
               borderRadius: 14,
               border: "1px solid #1f2937",
               background:
+                "radial-gradient(circle at 0 0, rgba(148,163,184,0.18), rgba(15,23,42,1))",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12,
+                textTransform: "uppercase",
+                letterSpacing: 0.8,
+                opacity: 0.7,
+                marginBottom: 4,
+              }}
+            >
+              Node không hoạt động (&gt; 1 phút)
+            </div>
+            <div style={{ fontSize: 24, fontWeight: 700 }}>{inactiveNodes}</div>
+          </div>
+
+          <div
+            style={{
+              padding: "14px 16px",
+              borderRadius: 14,
+              border: "1px solid #1f2937",
+              background:
                 "radial-gradient(circle at 0 0, rgba(248,250,252,0.05), rgba(15,23,42,1))",
             }}
           >
@@ -359,50 +412,65 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </section>
 
-        {/* NODE LIST */}
+        {/* GRID NODE CARDS */}
         <section>
           <div
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 12,
-              gap: 8,
+              borderRadius: 18,
+              border: "1px solid #1f2937",
+              background:
+                "radial-gradient(circle at 0 0, rgba(148,163,184,0.16), rgba(15,23,42,1))",
+              padding: 16,
             }}
           >
-            <h2
+            <div
               style={{
-                fontSize: 16,
-                fontWeight: 600,
-                margin: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 12,
+                gap: 8,
               }}
             >
-              Danh sách node
-            </h2>
-            <span style={{ fontSize: 11, opacity: 0.6 }}>
-              Click “More details” trong từng node để xem thêm thông tin.
-            </span>
-          </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.9,
+                    opacity: 0.75,
+                  }}
+                >
+                  Danh sách node
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.7 }}>
+                  Tổng {totalNodes} node – click vào từng node để xem chi tiết.
+                </div>
+              </div>
+            </div>
 
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 16,
-            }}
-          >
-            {nodes.map((node) => (
-              <NodeCard
-                key={node.devAddr}
-                devAddr={node.devAddr}
-                sensorData={node.sensorData}
-                sensorLoaded={node.sensorLoaded}
-                onRemove={(id) => setDeleteTarget(id)}
-                onMoreDetails={onOpenNodeDetail}
-              />
-            ))}
-
-            {nodes.length === 0 && (
+            {nodes.length > 0 ? (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fill, minmax(280px, 1fr))",
+                  gap: 16,
+                  width: "100%",
+                }}
+              >
+                {nodes.map((node) => (
+                  <NodeCard
+                    key={node.devAddr}
+                    devAddr={node.devAddr}
+                    sensorData={node.sensorData}
+                    sensorLoaded={node.sensorLoaded}
+                    onRemove={(devAddr) => setDeleteTarget(devAddr)}
+                    onMoreDetails={onOpenNodeDetail}
+                  />
+                ))}
+              </div>
+            ) : (
               <div
                 style={{
                   marginTop: 24,
@@ -423,109 +491,124 @@ const Dashboard: React.FC<DashboardProps> = ({
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(15,23,42,0.7)",
+            backgroundColor: "rgba(15,23,42,0.6)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 50,
+            zIndex: 40,
           }}
+          onClick={closeModal}
         >
           <div
             style={{
-              background: "#020617",
-              color: "#e5e7eb",
+              width: "100%",
+              maxWidth: 360,
+              backgroundColor: "#020617",
               borderRadius: 16,
-              padding: "20px 22px",
-              minWidth: 320,
-              boxShadow: "0 24px 50px rgba(0,0,0,0.6)",
               border: "1px solid #1f2937",
+              boxShadow: "0 20px 40px rgba(15,23,42,0.9)",
+              padding: 20,
             }}
+            onClick={(e) => e.stopPropagation()}
           >
             <h2
               style={{
-                marginBottom: 10,
                 fontSize: 18,
                 fontWeight: 600,
+                marginBottom: 10,
               }}
             >
               Thêm node mới
             </h2>
             <p
               style={{
-                fontSize: 12,
-                opacity: 0.7,
-                marginBottom: 12,
+                fontSize: 13,
+                opacity: 0.75,
+                marginBottom: 14,
               }}
             >
-              Nhập DevAddr (số nguyên dương) để thêm node vào bảng điều khiển.
+              Nhập DevAddr (số nguyên dương) của node cảm biến mà bạn muốn theo
+              dõi.
             </p>
+
             <form onSubmit={handleSubmit}>
-              <label style={{ fontSize: 13 }}>
-                DevAddr:
+              <div style={{ marginBottom: 10 }}>
+                <label
+                  htmlFor="devAddr"
+                  style={{
+                    fontSize: 12,
+                    opacity: 0.8,
+                    display: "block",
+                    marginBottom: 4,
+                  }}
+                >
+                  DevAddr
+                </label>
                 <input
+                  id="devAddr"
                   type="number"
                   value={devAddrInput}
                   onChange={(e) => setDevAddrInput(e.target.value)}
                   style={{
-                    marginTop: 6,
                     width: "100%",
                     padding: "8px 10px",
-                    borderRadius: 8,
-                    border: "1px solid #334155",
-                    outline: "none",
-                    fontSize: 13,
+                    borderRadius: 10,
+                    border: "1px solid #4b5563",
                     backgroundColor: "#020617",
                     color: "#e5e7eb",
+                    fontSize: 13,
+                    outline: "none",
                   }}
+                  placeholder="Ví dụ: 1, 2, 3..."
                 />
-              </label>
+              </div>
+
               {error && (
-                <p
+                <div
                   style={{
-                    color: "#f97373",
-                    marginTop: 6,
                     fontSize: 12,
+                    color: "#fecaca",
+                    marginBottom: 8,
                   }}
                 >
                   {error}
-                </p>
+                </div>
               )}
 
               <div
                 style={{
-                  marginTop: 16,
                   display: "flex",
                   justifyContent: "flex-end",
                   gap: 8,
+                  marginTop: 10,
                 }}
               >
                 <button
                   type="button"
                   onClick={closeModal}
                   style={{
-                    padding: "8px 14px",
-                    borderRadius: 8,
+                    padding: "8px 12px",
+                    borderRadius: 999,
                     border: "1px solid #4b5563",
                     background: "transparent",
-                    cursor: "pointer",
-                    fontSize: 13,
                     color: "#e5e7eb",
+                    fontSize: 12,
+                    cursor: "pointer",
                   }}
                 >
-                  Hủy
+                  Huỷ
                 </button>
                 <button
                   type="submit"
                   style={{
-                    padding: "8px 16px",
-                    borderRadius: 8,
+                    padding: "8px 14px",
+                    borderRadius: 999,
                     border: "none",
-                    background:
-                      "linear-gradient(135deg,#22c55e,#16a34a)",
-                    color: "#fff",
+                    background: "linear-gradient(135deg,#22c55e,#16a34a)",
+                    color: "#f9fafb",
+                    fontSize: 12,
                     fontWeight: 600,
                     cursor: "pointer",
-                    fontSize: 13,
                   }}
                 >
                   Thêm node
@@ -535,85 +618,100 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* POPUP xác nhận xoá node */}
       {deleteTarget !== null && (
         <div
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(15,23,42,0.7)",
+            backgroundColor: "rgba(15,23,42,0.6)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 50,
+            zIndex: 40,
           }}
+          onClick={() => setDeleteTarget(null)}
         >
           <div
             style={{
-              background: "#020617",
-              color: "#e5e7eb",
+              width: "100%",
+              maxWidth: 320,
+              backgroundColor: "#020617",
               borderRadius: 16,
-              padding: "22px 24px",
-              minWidth: 340,
-              boxShadow: "0 24px 50px rgba(0,0,0,0.6)",
               border: "1px solid #1f2937",
+              boxShadow: "0 20px 40px rgba(15,23,42,0.9)",
+              padding: 20,
             }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <h2 style={{ marginBottom: 10, fontSize: 18, fontWeight: 600 }}>
-              Xoá node?
+            <h2
+              style={{
+                fontSize: 16,
+                fontWeight: 600,
+                marginBottom: 8,
+              }}
+            >
+              Xoá node
             </h2>
-
-            <p style={{ fontSize: 13, opacity: 0.85, marginBottom: 16 }}>
-              Bạn có chắc muốn xoá node <b>DevAddr {deleteTarget}</b>?<br />
-              Hành động này không thể hoàn tác.
+            <p
+              style={{
+                fontSize: 13,
+                opacity: 0.8,
+                marginBottom: 14,
+              }}
+            >
+              Bạn có chắc chắn muốn xoá node DevAddr {deleteTarget} khỏi
+              dashboard?
             </p>
 
             <div
               style={{
-                marginTop: 12,
                 display: "flex",
                 justifyContent: "flex-end",
                 gap: 8,
               }}
             >
               <button
+                type="button"
                 onClick={() => setDeleteTarget(null)}
                 style={{
-                  padding: "8px 14px",
-                  borderRadius: 8,
+                  padding: "7px 12px",
+                  borderRadius: 999,
                   border: "1px solid #4b5563",
                   background: "transparent",
-                  cursor: "pointer",
-                  fontSize: 13,
                   color: "#e5e7eb",
+                  fontSize: 12,
+                  cursor: "pointer",
                 }}
               >
-                Hủy
+                Huỷ
               </button>
-
               <button
+                type="button"
                 onClick={() => {
-                  onRemoveNode?.(deleteTarget);
+                  if (deleteTarget !== null) {
+                    onRemoveNode?.(deleteTarget);
+                  }
                   setDeleteTarget(null);
                 }}
                 style={{
-                  padding: "8px 16px",
-                  borderRadius: 8,
+                  padding: "7px 14px",
+                  borderRadius: 999,
                   border: "none",
-                  background:
-                    "linear-gradient(135deg,#ef4444,#b91c1c)",
-                  color: "#fff",
+                  background: "linear-gradient(135deg,#ef4444,#b91c1c)",
+                  color: "#f9fafb",
+                  fontSize: 12,
                   fontWeight: 600,
                   cursor: "pointer",
-                  fontSize: 13,
                 }}
               >
-                Xoá node
+                Xoá
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

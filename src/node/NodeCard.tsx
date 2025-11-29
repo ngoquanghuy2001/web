@@ -24,23 +24,74 @@ const NodeCard: React.FC<NodeCardProps> = ({
     const co2 = sensorData?.co2;
     const timestamp = sensorData?.timestamp ?? null;
 
+    // Tính trạng thái offline dựa trên timestamp
+    const lastTimestampMs = timestamp ? new Date(timestamp).getTime() : NaN;
+    const isOffline =
+        !!timestamp &&
+        !Number.isNaN(lastTimestampMs) &&
+        Date.now() - lastTimestampMs > 60_000;
+
     const isWarning =
         (sensorData?.fire ?? false) ||
-        (temperature !== undefined && temperature !== null && temperature >= 40) ||
+        (temperature !== undefined &&
+            temperature !== null &&
+            temperature >= 40) ||
         (co2 !== undefined && co2 !== null && co2 >= 2000);
 
-    const statusText = isWarning ? "ALERT" : "Safe";
+    let statusText = "Safe";
+
+    if (!timestamp) {
+        statusText = "No data";
+    } else if (isOffline) {
+        statusText = "Offline";
+    } else if (isWarning) {
+        statusText = "WARNING";
+    }
 
     const handleRemoveClick = () => {
         onRemove?.(devAddr);
     };
 
-    // Style cho card khi warning vs normal
+    const baseBadgeStyle: React.CSSProperties = {
+        padding: "4px 10px",
+        borderRadius: 999,
+        fontSize: 11,
+        fontWeight: 700,
+        textTransform: "uppercase",
+        letterSpacing: 0.7,
+    };
+
+    let badgeStyle: React.CSSProperties = {
+        backgroundColor: "rgba(34,197,94,0.16)",
+        color: "#bbf7d0",
+        border: "1px solid rgba(34,197,94,0.6)",
+    };
+
+    if (!timestamp) {
+        badgeStyle = {
+            backgroundColor: "rgba(148,163,184,0.18)",
+            color: "#e5e7eb",
+            border: "1px solid rgba(148,163,184,0.7)",
+        };
+    } else if (isOffline) {
+        badgeStyle = {
+            backgroundColor: "rgba(148,163,184,0.18)",
+            color: "#e5e7eb",
+            border: "1px solid rgba(148,163,184,0.9)",
+        };
+    } else if (isWarning) {
+        badgeStyle = {
+            backgroundColor: "rgba(248,113,113,0.18)",
+            color: "#fecaca",
+            border: "1px solid rgba(248,113,113,0.85)",
+        };
+    }
+
+    // Style card tối ưu cho grid
     const cardBaseStyle: React.CSSProperties = {
         position: "relative",
-        flex: "0 1 280px",
         borderRadius: 16,
-        padding: 14,
+        padding: 16,
         backgroundColor: "#020617",
         border: "1px solid #1f2937",
         boxShadow: "0 10px 25px rgba(15,23,42,0.5)",
@@ -48,34 +99,37 @@ const NodeCard: React.FC<NodeCardProps> = ({
         flexDirection: "column",
         gap: 8,
         overflow: "hidden",
+        minHeight: 190,
     };
 
     const warningBorderStyle: React.CSSProperties = isWarning
         ? {
-            border: "1px solid rgba(248,113,113,0.9)", // đỏ
+            border: "1px solid rgba(248,113,113,0.9)",
             boxShadow:
                 "0 0 0 1px rgba(248,113,113,0.4), 0 0 25px rgba(248,113,113,0.35)",
         }
         : {};
 
     return (
-        <div style={{ ...cardBaseStyle, ...warningBorderStyle }}>
-            {/* Dải đỏ bên trái khi cảnh báo */}
-            {isWarning && (
-                <div
-                    style={{
-                        position: "absolute",
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: 4,
-                        background:
-                            "linear-gradient(to bottom, #f97373, #ef4444, #b91c1c)",
-                    }}
-                />
-            )}
+        <div
+            style={{
+                ...cardBaseStyle,
+                ...warningBorderStyle,
+            }}
+        >
+            {/* Hiệu ứng nền mờ phía sau */}
+            <div
+                style={{
+                    position: "absolute",
+                    inset: 0,
+                    background:
+                        "radial-gradient(circle at top left, rgba(56,189,248,0.15), transparent 55%)",
+                    opacity: 0.7,
+                    pointerEvents: "none",
+                }}
+            />
 
-            {/* Icon cảnh báo lớn khi danger */}
+            {/* Nếu đang cảnh báo, hiển thị icon ⚠ nổi ở góc */}
             {isWarning && (
                 <div
                     style={{
@@ -126,19 +180,8 @@ const NodeCard: React.FC<NodeCardProps> = ({
                     {/* Badge trạng thái */}
                     <span
                         style={{
-                            padding: "4px 10px",
-                            borderRadius: 999,
-                            fontSize: 11,
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            letterSpacing: 0.7,
-                            backgroundColor: isWarning
-                                ? "rgba(248,113,113,0.18)"
-                                : "rgba(34,197,94,0.16)",
-                            color: isWarning ? "#fecaca" : "#bbf7d0",
-                            border: isWarning
-                                ? "1px solid rgba(248,113,113,0.85)"
-                                : "1px solid rgba(34,197,94,0.6)",
+                            ...baseBadgeStyle,
+                            ...badgeStyle,
                         }}
                     >
                         {statusText}
@@ -160,8 +203,11 @@ const NodeCard: React.FC<NodeCardProps> = ({
                                 fontWeight: 700,
                                 lineHeight: "22px",
                                 fontSize: 14,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
                             }}
-                            aria-label={`Remove node ${devAddr}`}
+                            title="Remove node"
                         >
                             ×
                         </button>
@@ -169,20 +215,21 @@ const NodeCard: React.FC<NodeCardProps> = ({
                 </div>
             </div>
 
-            {/* Body */}
-            {!sensorLoaded && (
-                <p
-                    style={{
-                        fontSize: 12,
-                        opacity: 0.7,
-                        marginTop: 6,
-                    }}
-                >
-                    Đang chờ gói dữ liệu cảm biến đầu tiên...
-                </p>
-            )}
+            {/* Thời gian cập nhật */}
+            <div
+                style={{
+                    fontSize: 11,
+                    opacity: 0.7,
+                    marginBottom: 10,
+                }}
+            >
+                {timestamp
+                    ? `Last update: ${timestamp}`
+                    : "Chưa có dữ liệu cập nhật."}
+            </div>
 
-            {sensorLoaded && !sensorData && (
+            {/* Nếu chưa loaded lần nào */}
+            {!sensorLoaded && (
                 <p
                     style={{
                         fontSize: 12,
@@ -223,81 +270,67 @@ const NodeCard: React.FC<NodeCardProps> = ({
                             </div>
                         </div>
                         <div>
-                            <div style={{ opacity: 0.6, fontSize: 11 }}>Battery</div>
+                            <div style={{ opacity: 0.6, fontSize: 11 }}>Fire status</div>
                             <div style={{ fontWeight: 500 }}>
-                                {formatValue(sensorData?.battery, "%")}
-                            </div>
-                        </div>
-                        <div>
-                            <div style={{ opacity: 0.6, fontSize: 11 }}>Fire</div>
-                            <div style={{ fontWeight: 500 }}>
-                                {sensorData?.fire ? "Yes" : "No"}
-                            </div>
-                        </div>
-                        <div>
-                            <div style={{ opacity: 0.6, fontSize: 11 }}>Max Temp</div>
-                            <div style={{ fontWeight: 500 }}>
-                                {formatValue(sensorData?.maxT, "°C")}
+                                {sensorData.fire ? "Cảnh báo cháy" : "Không có cảnh báo"}
                             </div>
                         </div>
                     </div>
 
-                    <div
-                        style={{
-                            marginTop: 8,
-                            fontSize: 11,
-                            opacity: 0.6,
-                        }}
-                    >
-                        Timestamp:{" "}
-                        <span style={{ opacity: 0.9 }}>
-                            {timestamp ?? "No timestamp"}
-                        </span>
-                    </div>
+                    {/* Link xem chi tiết */}
+                    {onMoreDetails && (
+                        <button
+                            type="button"
+                            onClick={() => onMoreDetails(devAddr)}
+                            style={{
+                                marginTop: 10,
+                                alignSelf: "flex-start",
+                                padding: "6px 10px",
+                                borderRadius: 999,
+                                border: "1px solid #374151",
+                                background:
+                                    "linear-gradient(135deg, rgba(15,23,42,1), rgba(15,23,42,0.7))",
+                                color: "#e5e7eb",
+                                fontSize: 11,
+                                textTransform: "uppercase",
+                                letterSpacing: 0.8,
+                                cursor: "pointer",
+                            }}
+                        >
+                            View detail
+                        </button>
+                    )}
                 </>
             )}
 
-            {/* Footer */}
+            {/* Tooltip nhỏ giải thích cảnh báo */}
             <div
                 style={{
                     marginTop: 10,
+                    borderTop: "1px dashed rgba(148,163,184,0.4)",
+                    paddingTop: 6,
+                    fontSize: 11,
+                    opacity: 0.75,
                     display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
                     gap: 8,
+                    alignItems: "flex-start",
                 }}
             >
-                <button
-                    style={{
-                        padding: "6px 12px",
-                        borderRadius: 999,
-                        border: "1px solid #374151",
-                        background: "transparent",
-                        cursor: "pointer",
-                        fontSize: 11,
-                        fontWeight: 500,
-                        color: "#e5e7eb",
-                    }}
-                    onClick={() => onMoreDetails?.(devAddr)}
-                >
-                    More details
-                </button>
-
-
-                {isWarning && (
+                <span style={{ fontSize: 14 }}>ℹ</span>
+                {!sensorData && (
+                    <span>Node sẽ hiển thị dữ liệu ngay khi có gói tin đầu tiên.</span>
+                )}
+                {sensorData && !isWarning && (
+                    <span>Nhiệt độ &amp; CO₂ đang nằm trong ngưỡng an toàn.</span>
+                )}
+                {sensorData && isWarning && (
                     <div
                         style={{
-                            fontSize: 11,
-                            color: "#fecaca",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 4,
-                            textAlign: "right",
-                            maxWidth: 160,
+                            textAlign: "left",
+                            maxWidth: "100%",
                         }}
                     >
-                        <span>🔥</span>
-                        <span>Nguy hiểm: vượt ngưỡng nhiệt độ / CO₂ hoặc báo cháy.</span>
+                        <span>Nguy hiểm: nhiệt độ vượt ngưỡng nhiệt độ an toàn.</span>
                     </div>
                 )}
             </div>
