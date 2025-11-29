@@ -1,4 +1,3 @@
-// src/node/NodeCard.tsx
 import React from "react";
 import { SensorData } from "../api/appsyncClient";
 
@@ -28,28 +27,68 @@ const NodeCard: React.FC<NodeCardProps> = ({
         (temperature !== undefined && temperature !== null && temperature >= 40) ||
         (co2 !== undefined && co2 !== null && co2 >= 2000);
 
-    const statusText = isWarning ? "Warning" : "Safe";
+    const statusText = isWarning ? "ALERT" : "Safe";
 
     const handleRemoveClick = () => {
-        if (!onRemove) return;
-        const ok = window.confirm(`Bạn có chắc muốn xoá node DevAddr ${devAddr}?`);
-        if (ok) onRemove(devAddr);
+        onRemove?.(devAddr);
     };
 
+    // Style cho card khi warning vs normal
+    const cardBaseStyle: React.CSSProperties = {
+        position: "relative",
+        flex: "0 1 280px",
+        borderRadius: 16,
+        padding: 14,
+        backgroundColor: "#020617",
+        border: "1px solid #1f2937",
+        boxShadow: "0 10px 25px rgba(15,23,42,0.5)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        overflow: "hidden",
+    };
+
+    const warningBorderStyle: React.CSSProperties = isWarning
+        ? {
+            border: "1px solid rgba(248,113,113,0.9)", // đỏ
+            boxShadow:
+                "0 0 0 1px rgba(248,113,113,0.4), 0 0 25px rgba(248,113,113,0.35)",
+        }
+        : {};
+
     return (
-        <div
-            style={{
-                flex: "0 1 280px",
-                borderRadius: 16,
-                padding: 14,
-                backgroundColor: "#020617",
-                border: "1px solid #1f2937",
-                boxShadow: "0 10px 25px rgba(15,23,42,0.5)",
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-            }}
-        >
+        <div style={{ ...cardBaseStyle, ...warningBorderStyle }}>
+            {/* Dải đỏ bên trái khi cảnh báo */}
+            {isWarning && (
+                <div
+                    style={{
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: 4,
+                        background:
+                            "linear-gradient(to bottom, #f97373, #ef4444, #b91c1c)",
+                    }}
+                />
+            )}
+
+            {/* Icon cảnh báo lớn khi danger */}
+            {isWarning && (
+                <div
+                    style={{
+                        position: "absolute",
+                        top: 10,
+                        right: 10,
+                        fontSize: 20,
+                        color: "#fecaca",
+                        opacity: 0.9,
+                    }}
+                >
+                    ⚠
+                </div>
+            )}
+
             {/* Header */}
             <div
                 style={{
@@ -57,6 +96,7 @@ const NodeCard: React.FC<NodeCardProps> = ({
                     alignItems: "center",
                     justifyContent: "space-between",
                     marginBottom: 4,
+                    gap: 8,
                 }}
             >
                 <div>
@@ -84,17 +124,19 @@ const NodeCard: React.FC<NodeCardProps> = ({
                     {/* Badge trạng thái */}
                     <span
                         style={{
-                            padding: "4px 8px",
+                            padding: "4px 10px",
                             borderRadius: 999,
                             fontSize: 11,
-                            fontWeight: 600,
+                            fontWeight: 700,
                             textTransform: "uppercase",
-                            letterSpacing: 0.6,
-                            backgroundColor: isWarning ? "rgba(248,113,113,0.16)" : "rgba(34,197,94,0.16)",
+                            letterSpacing: 0.7,
+                            backgroundColor: isWarning
+                                ? "rgba(248,113,113,0.18)"
+                                : "rgba(34,197,94,0.16)",
                             color: isWarning ? "#fecaca" : "#bbf7d0",
                             border: isWarning
-                                ? "1px solid rgba(248,113,113,0.5)"
-                                : "1px solid rgba(34,197,94,0.5)",
+                                ? "1px solid rgba(248,113,113,0.85)"
+                                : "1px solid rgba(34,197,94,0.6)",
                         }}
                     >
                         {statusText}
@@ -246,10 +288,12 @@ const NodeCard: React.FC<NodeCardProps> = ({
                             display: "flex",
                             alignItems: "center",
                             gap: 4,
+                            textAlign: "right",
+                            maxWidth: 160,
                         }}
                     >
-                        <span>⚠</span>
-                        <span>Cảnh báo ngưỡng nhiệt độ / CO₂</span>
+                        <span>🔥</span>
+                        <span>Nguy hiểm: vượt ngưỡng nhiệt độ / CO₂ hoặc báo cháy.</span>
                     </div>
                 )}
             </div>

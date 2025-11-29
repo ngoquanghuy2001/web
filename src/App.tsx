@@ -1,4 +1,3 @@
-// src/App.tsx
 import React, { useEffect, useState } from "react";
 import {
   loginWithHostedUI,
@@ -12,6 +11,7 @@ import { SensorData } from "./api/appsyncClient";
 import { generateClient } from "aws-amplify/api";
 
 const client = generateClient();
+const LOCAL_STORAGE_KEY = "wildfire_dashboard_nodes";
 
 const App: React.FC = () => {
   const [jwt, setJwt] = useState<string | null>(null);
@@ -19,7 +19,6 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // map DevAddr -> sensorData / loaded
   const [sensorDataMap, setSensorDataMap] = useState<
     Record<number, SensorData | null>
   >({});
@@ -27,10 +26,30 @@ const App: React.FC = () => {
     Record<number, boolean>
   >({});
 
-  // danh sách DevAddr đang theo dõi (ban đầu 1,2,3)
-  const [devAddrs, setDevAddrs] = useState<number[]>([1, 2, 3]);
+  // ============================
+  // Load danh sách devAddrs từ localStorage
+  // ============================
+  const [devAddrs, setDevAddrs] = useState<number[]>(() => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        const arr = JSON.parse(stored);
+        if (Array.isArray(arr) && arr.every((n) => Number.isInteger(n))) {
+          return arr;
+        }
+      }
+    } catch { }
+    return [1, 2]; // mặc định
+  });
 
-  // được gọi từ Dashboard sau khi user nhập DevAddr trong popup
+  // Hàm ghi localStorage
+  const saveToLocalStorage = (arr: number[]) => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(arr));
+  };
+
+  // ============================
+  // Handle Add Node
+  // ============================
   const handleAddNode = (devAddr: number) => {
     if (!Number.isInteger(devAddr) || devAddr <= 0) {
       alert("DevAddr phải là số nguyên dương.");
@@ -42,14 +61,23 @@ const App: React.FC = () => {
         alert(`DevAddr ${devAddr} đã tồn tại trong danh sách.`);
         return prev;
       }
-      return [...prev, devAddr];
+      const updated = [...prev, devAddr];
+      saveToLocalStorage(updated);
+      return updated;
     });
   };
 
+  // ============================
+  // Handle Remove Node
+  // ============================
   const handleRemoveNode = (devAddr: number) => {
-    setDevAddrs((prev) => prev.filter((id) => id !== devAddr));
+    setDevAddrs((prev) => {
+      const updated = prev.filter((id) => id !== devAddr);
+      saveToLocalStorage(updated);
+      return updated;
+    });
 
-    // dọn dẹp state cũ (không bắt buộc, nhưng gọn)
+    // xoá data map (không bắt buộc)
     setSensorDataMap((prev) => {
       const next = { ...prev };
       delete next[devAddr];
@@ -62,7 +90,9 @@ const App: React.FC = () => {
     });
   };
 
+  // ============================
   // Auth
+  // ============================
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -90,9 +120,7 @@ const App: React.FC = () => {
         if (!hasCode && !hasError) {
           await loginWithHostedUI();
         } else {
-          setErrorMsg(
-            "Không thể lấy token từ Cognito. Vui lòng kiểm tra cấu hình App client / /oauth2/token."
-          );
+          setErrorMsg("Không thể lấy token từ Cognito.");
         }
       } finally {
         setLoading(false);
@@ -102,12 +130,14 @@ const App: React.FC = () => {
     void initAuth();
   }, []);
 
-  // Subscriptions cho nhiều DevAddr (danh sách động)
+  // ============================
+  // Subscription AppSync cho mỗi DevAddr
+  // ============================
   useEffect(() => {
     if (!jwt) return;
     if (devAddrs.length === 0) return;
 
-    console.log("Đăng ký subscription onNodeDataAdded cho DevAddr:", devAddrs);
+    console.log("Đăng ký subscription:", devAddrs);
 
     const subscriptions = devAddrs.map((addr) =>
       (client.graphql({
@@ -131,8 +161,6 @@ const App: React.FC = () => {
           const newData = response?.data?.onNodeDataAdded;
           if (!newData) return;
 
-          console.log("Dữ liệu mới DevAddr", addr, newData);
-
           setSensorDataMap((prev) => ({
             ...prev,
             [addr]: newData,
@@ -149,14 +177,13 @@ const App: React.FC = () => {
     );
 
     return () => {
-      subscriptions.forEach((sub) => {
-        if (sub && typeof sub.unsubscribe === "function") {
-          sub.unsubscribe();
-        }
-      });
+      subscriptions.forEach((sub) => sub?.unsubscribe?.());
     };
   }, [jwt, devAddrs]);
 
+  // ============================
+  // Logout
+  // ============================
   const handleLogout = async () => {
     try {
       await logout();
@@ -165,7 +192,10 @@ const App: React.FC = () => {
       setUser(null);
       setSensorDataMap({});
       setSensorLoadedMap({});
-      setDevAddrs([1, 2, 3]); // reset về mặc định nếu muốn
+
+      // reset localStorage về mặc định
+      saveToLocalStorage([1, 2]);
+      setDevAddrs([1, 2]);
     }
   };
 
@@ -176,9 +206,7 @@ const App: React.FC = () => {
   if (!jwt) {
     return (
       <div style={{ padding: 16 }}>
-        {errorMsg && (
-          <p style={{ color: "red", marginBottom: 12 }}>Lỗi: {errorMsg}</p>
-        )}
+        {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
         <p>Bạn chưa đăng nhập.</p>
         <button onClick={() => void loginWithHostedUI()}>
           Đăng nhập với Cognito

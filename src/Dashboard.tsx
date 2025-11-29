@@ -1,4 +1,3 @@
-// src/Dashboard.tsx
 import React, { useState } from "react";
 import { SensorData } from "./api/appsyncClient";
 import NodeCard from "./node/NodeCard";
@@ -34,6 +33,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [devAddrInput, setDevAddrInput] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
   const openModal = () => {
     setDevAddrInput("");
@@ -395,7 +395,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 devAddr={node.devAddr}
                 sensorData={node.sensorData}
                 sensorLoaded={node.sensorLoaded}
-                onRemove={onRemoveNode}
+                onRemove={(id) => setDeleteTarget(id)}
               />
             ))}
 
@@ -532,6 +532,85 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       )}
+      {deleteTarget !== null && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15,23,42,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 50,
+          }}
+        >
+          <div
+            style={{
+              background: "#020617",
+              color: "#e5e7eb",
+              borderRadius: 16,
+              padding: "22px 24px",
+              minWidth: 340,
+              boxShadow: "0 24px 50px rgba(0,0,0,0.6)",
+              border: "1px solid #1f2937",
+            }}
+          >
+            <h2 style={{ marginBottom: 10, fontSize: 18, fontWeight: 600 }}>
+              Xoá node?
+            </h2>
+
+            <p style={{ fontSize: 13, opacity: 0.85, marginBottom: 16 }}>
+              Bạn có chắc muốn xoá node <b>DevAddr {deleteTarget}</b>?<br />
+              Hành động này không thể hoàn tác.
+            </p>
+
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 8,
+              }}
+            >
+              <button
+                onClick={() => setDeleteTarget(null)}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: 8,
+                  border: "1px solid #4b5563",
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  color: "#e5e7eb",
+                }}
+              >
+                Hủy
+              </button>
+
+              <button
+                onClick={() => {
+                  onRemoveNode?.(deleteTarget);
+                  setDeleteTarget(null);
+                }}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 8,
+                  border: "none",
+                  background:
+                    "linear-gradient(135deg,#ef4444,#b91c1c)",
+                  color: "#fff",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                Xoá node
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
