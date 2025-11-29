@@ -27,26 +27,38 @@ const App: React.FC = () => {
     Record<number, boolean>
   >({});
 
-  // 🔹 danh sách DevAddr đang theo dõi (ban đầu 1,2,3)
+  // danh sách DevAddr đang theo dõi (ban đầu 1,2,3)
   const [devAddrs, setDevAddrs] = useState<number[]>([1, 2, 3]);
 
-  // 🔹 người dùng bấm nút + để thêm DevAddr mới
-  const handleAddNode = () => {
-    const input = window.prompt("Nhập DevAddr (số nguyên dương):");
-    if (!input) return;
-
-    const value = Number(input);
-    if (!Number.isInteger(value) || value <= 0) {
-      window.alert("DevAddr phải là số nguyên dương.");
+  // được gọi từ Dashboard sau khi user nhập DevAddr trong popup
+  const handleAddNode = (devAddr: number) => {
+    if (!Number.isInteger(devAddr) || devAddr <= 0) {
+      alert("DevAddr phải là số nguyên dương.");
       return;
     }
 
     setDevAddrs((prev) => {
-      if (prev.includes(value)) {
-        window.alert(`DevAddr ${value} đã tồn tại trong danh sách.`);
+      if (prev.includes(devAddr)) {
+        alert(`DevAddr ${devAddr} đã tồn tại trong danh sách.`);
         return prev;
       }
-      return [...prev, value];
+      return [...prev, devAddr];
+    });
+  };
+
+  const handleRemoveNode = (devAddr: number) => {
+    setDevAddrs((prev) => prev.filter((id) => id !== devAddr));
+
+    // dọn dẹp state cũ (không bắt buộc, nhưng gọn)
+    setSensorDataMap((prev) => {
+      const next = { ...prev };
+      delete next[devAddr];
+      return next;
+    });
+    setSensorLoadedMap((prev) => {
+      const next = { ...prev };
+      delete next[devAddr];
+      return next;
     });
   };
 
@@ -90,7 +102,7 @@ const App: React.FC = () => {
     void initAuth();
   }, []);
 
-  // 🔹 Subscriptions cho nhiều DevAddr (danh sách động)
+  // Subscriptions cho nhiều DevAddr (danh sách động)
   useEffect(() => {
     if (!jwt) return;
     if (devAddrs.length === 0) return;
@@ -186,7 +198,8 @@ const App: React.FC = () => {
       user={user as UserInfo}
       nodes={nodes}
       onLogout={handleLogout}
-      onAddNode={handleAddNode} // 🔹 truyền callback xuống dashboard
+      onAddNode={handleAddNode}
+      onRemoveNode={handleRemoveNode}
     />
   );
 };
