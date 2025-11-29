@@ -7,7 +7,7 @@ import {
   logout,
   UserInfo,
 } from "./auth";
-import Dashboard from "./Dashboard";
+import Dashboard, { DashboardNode } from "./Dashboard";
 import { SensorData } from "./api/appsyncClient";
 import { generateClient } from "aws-amplify/api";
 
@@ -18,11 +18,39 @@ const App: React.FC = () => {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [sensorData, setSensorData] = useState<SensorData | null>(null);
-  const [sensorLoaded, setSensorLoaded] = useState(false);
 
-  const devAddr = 3;
+  // map DevAddr -> sensorData / loaded
+  const [sensorDataMap, setSensorDataMap] = useState<
+    Record<number, SensorData | null>
+  >({});
+  const [sensorLoadedMap, setSensorLoadedMap] = useState<
+    Record<number, boolean>
+  >({});
 
+  // 🔹 danh sách DevAddr đang theo dõi (ban đầu 1,2,3)
+  const [devAddrs, setDevAddrs] = useState<number[]>([1, 2, 3]);
+
+  // 🔹 người dùng bấm nút + để thêm DevAddr mới
+  const handleAddNode = () => {
+    const input = window.prompt("Nhập DevAddr (số nguyên dương):");
+    if (!input) return;
+
+    const value = Number(input);
+    if (!Number.isInteger(value) || value <= 0) {
+      window.alert("DevAddr phải là số nguyên dương.");
+      return;
+    }
+
+    setDevAddrs((prev) => {
+      if (prev.includes(value)) {
+        window.alert(`DevAddr ${value} đã tồn tại trong danh sách.`);
+        return prev;
+      }
+      return [...prev, value];
+    });
+  };
+
+  // Auth
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -62,48 +90,60 @@ const App: React.FC = () => {
     void initAuth();
   }, []);
 
+  // 🔹 Subscriptions cho nhiều DevAddr (danh sách động)
   useEffect(() => {
     if (!jwt) return;
+    if (devAddrs.length === 0) return;
 
-    console.log("Đăng ký subscription onNodeDataAdded cho DevAddr:", devAddr);
-    setSensorLoaded(false);
+    console.log("Đăng ký subscription onNodeDataAdded cho DevAddr:", devAddrs);
 
-    const subscription = (client.graphql({
-      query: /* GraphQL */ `
-        subscription OnNodeDataAdded($DevAddr: Int!) {
-          onNodeDataAdded(DevAddr: $DevAddr) {
-            co2
-            battery
-            fire
-            humidity
-            maxT
-            temperature
+    const subscriptions = devAddrs.map((addr) =>
+      (client.graphql({
+        query: /* GraphQL */ `
+          subscription OnNodeDataAdded($DevAddr: Int!) {
+            onNodeDataAdded(DevAddr: $DevAddr) {
+              DevAddr
+              co2
+              battery
+              fire
+              humidity
+              maxT
+              temperature
+              timestamp
+            }
           }
-        }
-      `,
-      variables: { DevAddr: devAddr },
-    }) as any).subscribe({
-      next: (response: { data?: { onNodeDataAdded?: SensorData } }) => {
-        if (!response.data || !response.data.onNodeDataAdded) {
-          console.warn("Subscription: không có data trong response", response);
-          return;
-        }
-        const newData = response.data.onNodeDataAdded;
-        console.log("Subscription nhận được dữ liệu mới:", newData);
-        setSensorData(newData);
-        setSensorLoaded(true);
-      },
-      error: (error: unknown) => {
-        console.error("Lỗi subscription onNodeDataAdded:", error);
-      },
-    });
+        `,
+        variables: { DevAddr: addr },
+      }) as any).subscribe({
+        next: (response: { data?: { onNodeDataAdded?: SensorData } }) => {
+          const newData = response?.data?.onNodeDataAdded;
+          if (!newData) return;
+
+          console.log("Dữ liệu mới DevAddr", addr, newData);
+
+          setSensorDataMap((prev) => ({
+            ...prev,
+            [addr]: newData,
+          }));
+          setSensorLoadedMap((prev) => ({
+            ...prev,
+            [addr]: true,
+          }));
+        },
+        error: (error: unknown) => {
+          console.error("Lỗi subscription cho DevAddr", addr, error);
+        },
+      })
+    );
 
     return () => {
-      if (subscription && typeof subscription.unsubscribe === "function") {
-        subscription.unsubscribe();
-      }
+      subscriptions.forEach((sub) => {
+        if (sub && typeof sub.unsubscribe === "function") {
+          sub.unsubscribe();
+        }
+      });
     };
-  }, [jwt, devAddr]);
+  }, [jwt, devAddrs]);
 
   const handleLogout = async () => {
     try {
@@ -111,8 +151,9 @@ const App: React.FC = () => {
     } finally {
       setJwt(null);
       setUser(null);
-      setSensorData(null);
-      setSensorLoaded(false);
+      setSensorDataMap({});
+      setSensorLoadedMap({});
+      setDevAddrs([1, 2, 3]); // reset về mặc định nếu muốn
     }
   };
 
@@ -134,32 +175,19 @@ const App: React.FC = () => {
     );
   }
 
+  const nodes: DashboardNode[] = devAddrs.map((addr) => ({
+    devAddr: addr,
+    sensorData: sensorDataMap[addr] ?? null,
+    sensorLoaded: !!sensorLoadedMap[addr],
+  }));
+
   return (
-    <div style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 24,
-        }}
-      >
-        <button onClick={handleLogout}>Đăng xuất</button>
-      </div>
-
-      {errorMsg && (
-        <p style={{ color: "red", marginBottom: 12 }}>Lỗi: {errorMsg}</p>
-      )}
-
-      {user && (
-        <Dashboard
-          user={user}
-          // onLogout={handleLogout}
-          sensorData={sensorData}
-          sensorLoaded={sensorLoaded}
-          devAddr={devAddr}
-        />
-      )}
-    </div>
+    <Dashboard
+      user={user as UserInfo}
+      nodes={nodes}
+      onLogout={handleLogout}
+      onAddNode={handleAddNode} // 🔹 truyền callback xuống dashboard
+    />
   );
 };
 
