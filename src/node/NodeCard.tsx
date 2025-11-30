@@ -118,9 +118,9 @@ const NodeCard: React.FC<NodeCardProps> = ({
             };
     }
 
-    const cardBorder = darkMode ? "#1f2937" : "#e5e7eb";
+    const cardBorder = darkMode ? "#3e4d61ff" : "#e5e7eb";
     const cardBg = darkMode
-        ? "radial-gradient(circle at 0 0, rgba(56,189,248,0.16), rgba(15,23,42,1))"
+        ? "radial-gradient(circle at 0 0, rgba(34, 57, 66, 0.16), rgba(3, 17, 49, 1))"
         : "radial-gradient(circle at 0 0, rgba(56,189,248,0.16), #ffffff)";
     const textMuted = darkMode ? "rgba(148,163,184,0.9)" : "#6b7280";
 
@@ -251,8 +251,9 @@ const NodeCard: React.FC<NodeCardProps> = ({
                         style={{
                             padding: "6px 10px",
                             borderRadius: 999,
-                            border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
+                            border: `1px solid ${darkMode ? "#4b5563" : "#b2abb4ff"}`,
                             background: "transparent",
+                            color: darkMode ? "#e5e7eb" : "#111827",
                             fontSize: 11,
                             cursor: "pointer",
                             display: "inline-flex",
@@ -272,9 +273,9 @@ const NodeCard: React.FC<NodeCardProps> = ({
                             style={{
                                 padding: "6px 10px",
                                 borderRadius: 999,
-                                border: "none",
+                                border: `1px solid ${darkMode ? "#4b5563" : "#7f8083ff"}`,
                                 background: darkMode
-                                    ? "linear-gradient(135deg, rgba(15,23,42,1), rgba(15,23,42,0.7))"
+                                    ? "linear-gradient(135deg, rgba(7, 23, 59, 1), rgba(52, 71, 110, 0.7))"
                                     : "linear-gradient(135deg, #ffffff, #e5e7eb)",
                                 color: darkMode ? "#e5e7eb" : "#111827",
                                 fontSize: 11,

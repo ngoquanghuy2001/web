@@ -6,9 +6,9 @@
             "offline": "Offline",
             "warning": "Cảnh báo"
         },
-        "nodeLabel": "Node",
+        "nodeLabel": "Thiết bị",
         "devAddr": "DevAddr {{devAddr}}",
-        "removeNodeTitle": "Xoá node",
+        "removeNodeTitle": "Xoá thiết bị",
         "lastUpdate": "Lần cập nhật gần nhất: {{timestamp}}",
         "noUpdateYet": "Chưa có dữ liệu cập nhật.",
         "noSensorDataYet": "Chưa nhận được dữ liệu nào cho DevAddr {{devAddr}}.",
@@ -22,7 +22,7 @@
         },
         "viewDetail": "Xem chi tiết",
         "tooltip": {
-            "noDataYet": "Node sẽ hiển thị dữ liệu ngay khi có gói tin đầu tiên.",
+            "noDataYet": "Thiết bị sẽ hiển thị dữ liệu ngay khi có gói tin đầu tiên.",
             "safe": "Nhiệt độ và CO₂ đang nằm trong ngưỡng an toàn.",
             "warning": "Nguy hiểm: nhiệt độ hoặc CO₂ vượt ngưỡng an toàn."
         },
@@ -33,22 +33,22 @@
         "userDefault": "User",
         "back": "Quay lại",
         "header": {
-            "nodeTitle": "Node {{devAddr}}",
+            "nodeTitle": "Thiết bị {{devAddr}}",
             "subtitle": "Chi tiết"
         },
         "nodeMenu": {
             "title": "Tuỳ chọn",
-            "header": "Hành động với node",
-            "reportIncident": "Báo cáo sự cố"
+            "header": "Hành động với thiết bị",
+            "reportIncident": "Báo cáo cho kiểm lâm"
         },
         "settings": {
             "header": "Cài đặt",
             "darkMode": "Dark mode"
         },
         "summary": {
-            "title": "Chi tiết node {{devAddr}}",
-            "description": "Hiển thị tối đa 20 gói dữ liệu cảm biến gần nhất cho node này.",
-            "reportButton": "Báo cáo sự cố"
+            "title": "Chi tiết thiết bị {{devAddr}}",
+            "description": "Hiển thị tối đa 20 gói dữ liệu cảm biến gần nhất cho thiết bị này.",
+            "reportButton": "Báo cáo cho kiểm lâm"
         },
         "stats": {
             "temperature": "Nhiệt độ hiện tại",
@@ -74,19 +74,19 @@
                 "fire": "Cháy",
                 "timestamp": "Thời gian"
             },
-            "noData": "Chưa có dữ liệu nào cho node này.",
+            "noData": "Chưa có dữ liệu nào cho thiết bị này.",
             "fire": {
                 "yes": "CÓ",
                 "no": "KHÔNG"
             }
         },
         "report": {
-            "title": "Báo cáo sự cố node {{devAddr}}",
-            "confirmText": "Bạn có chắc chắn muốn gửi báo cáo sự cố cho node này không?",
+            "title": "Báo cáo cho kiểm lâm thiết bị {{devAddr}}",
+            "confirmText": "Bạn có chắc chắn muốn gửi báo cáo cho kiểm lâm cho thiết bị này không?",
             "no": "Không",
             "yesSend": "Có, gửi báo cáo",
             "sentTitle": "Đã gửi báo cáo",
-            "sentDescription": "Báo cáo sự cố cho node {{devAddr}} đã được gửi. Đội vận hành sẽ xử lý trong thời gian sớm nhất.",
+            "sentDescription": "Báo cáo cho kiểm lâm cho thiết bị {{devAddr}} đã được gửi. Đội vận hành sẽ xử lý trong thời gian sớm nhất.",
             "close": "Đóng"
         }
     },
@@ -118,58 +118,58 @@
             }
         },
         "main": {
-            "title": "Dashboard",
-            "description": "Giám sát trạng thái các node cảm biến (DevAddr) theo thời gian thực. Bạn có thể thêm / xoá node và xem chi tiết từng node."
+            "title": "Bảng điều khiển",
+            "description": "Giám sát trạng thái các thiết bị đo theo thời gian thực. Bạn có thể thêm / xoá và xem chi tiết từng thiết bị."
         },
         "actions": {
-            "addNode": "Thêm node",
-            "viewAllNodes": "Xem toàn bộ node trên bản đồ"
+            "addNode": "Thêm thiết bị",
+            "viewAllNodes": "Xem toàn bộ thiết bị trên bản đồ"
         },
         "summary": {
-            "totalNodes": "Tổng số node",
-            "activeNodes": "Node đang hoạt động",
-            "inactiveNodes": "Node không hoạt động (> 1 phút)",
+            "totalNodes": "Tổng số thiết bị",
+            "activeNodes": "Thiết bị đang hoạt động",
+            "inactiveNodes": "Thiết bị không hoạt động (> 1 phút)",
             "lastUpdate": {
                 "label": "Lần cập nhật cuối",
                 "noData": "Chưa có dữ liệu"
             }
         },
         "nodes": {
-            "title": "Danh sách node",
-            "subtitle": "Tổng {{count}} node – click vào từng node để xem chi tiết.",
-            "empty": "Chưa có node nào. Hãy bấm \"Thêm node\" để thêm DevAddr mới."
+            "title": "Danh sách thiết bị",
+            "subtitle": "Tổng {{count}} thiết bị – click vào từng thiết bị để xem chi tiết.",
+            "empty": "Chưa có thiết bị nào. Hãy bấm \"Thêm thiết bị\" để thêm thiết bị mới."
         },
         "addNode": {
-            "title": "Thêm node mới",
-            "description": "Nhập DevAddr (số nguyên dương) của node cảm biến mà bạn muốn theo dõi.",
-            "label": "DevAddr",
+            "title": "Thêm thiết bị mới",
+            "description": "Nhập mã (số nguyên dương) của thiết bị cảm biến mà bạn muốn theo dõi.",
+            "label": "Mã thiết bị",
             "placeholder": "Ví dụ: 1, 2, 3...",
-            "invalidDevAddr": "DevAddr phải là số nguyên dương.",
-            "duplicateDevAddr": "DevAddr {{devAddr}} đã tồn tại trong danh sách.",
+            "invalidDevAddr": "Mã phải là số nguyên dương.",
+            "duplicateDevAddr": "Thiết bị đo {{devAddr}} đã tồn tại trong danh sách.",
             "cancel": "Huỷ",
-            "submit": "Thêm node",
+            "submit": "Thêm thiết bị",
             "map": {
-                "title": "Vị trí node",
-                "hint": "Nhấn vào bản đồ để chọn vị trí node. Bạn có thể chỉnh lại sau trong màn hình chi tiết node.",
+                "title": "Vị trí thiết bị",
+                "hint": "Nhấn vào bản đồ để chọn vị trí thiết bị. Bạn có thể chỉnh lại sau trong màn hình chi tiết thiết bị.",
                 "noLocation": "Chưa chọn vị trí",
                 "picked": "Đã chọn: Lat {{lat}}, Lng {{lng}}"
             }
         },
         "deleteNode": {
-            "title": "Xoá node",
-            "description": "Bạn có chắc chắn muốn xoá node DevAddr {{devAddr}} khỏi dashboard?",
+            "title": "Xoá thiết bị",
+            "description": "Bạn có chắc chắn muốn xoá thiết bị đo {{devAddr}} khỏi bảng điều khiển?",
             "cancel": "Huỷ",
             "confirm": "Xoá"
         }
     },
     "map": {
         "single": {
-            "title": "Vị trí Node {{devAddr}}",
-            "subtitle": "Nhấn vào bản đồ để đặt lại vị trí của node."
+            "title": "Vị trí thiết bị {{devAddr}}",
+            "subtitle": "Nhấn vào bản đồ để đặt lại vị trí của thiết bị."
         },
         "all": {
-            "title": "Bản đồ toàn bộ node",
-            "subtitle": "Hiển thị {{count}} node. Phóng to/thu nhỏ để quan sát toàn bộ hệ thống."
+            "title": "Bản đồ toàn bộ thiết bị",
+            "subtitle": "Hiển thị {{count}} thiết bị. Phóng to/thu nhỏ để quan sát toàn bộ hệ thống."
         },
         "actions": {
             "close": "Đóng"

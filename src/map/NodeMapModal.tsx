@@ -17,7 +17,7 @@ export type MapMode =
 interface NodeMapModalProps {
     isOpen: boolean;
     mode: MapMode | null;
-    nodes: DashboardNode[];                 // 👈 CHỈNH CHỖ NÀY
+    nodes: DashboardNode[];
     nodeLocations: Record<number, NodeLocation>;
     darkMode: boolean;
     onClose: () => void;
@@ -93,16 +93,38 @@ const NodeMapModal: React.FC<NodeMapModalProps> = ({
 
     if (!isOpen || !mode) return null;
 
+    // ==== THEME THEO DARKMODE ====
     const popupBg = darkMode ? "#020617" : "#ffffff";
     const cardBorder = darkMode ? "#1f2937" : "#e5e7eb";
     const textColor = darkMode ? "#e5e7eb" : "#0f172a";
+
+    const overlayBg = darkMode
+        ? "rgba(15,23,42,0.85)"
+        : "rgba(15,23,42,0.55)";
+
+    const panelBg = darkMode
+        ? "linear-gradient(145deg,#020617,#020617,#020617)"
+        : "linear-gradient(145deg,#ffffff,#f3f4f6,#e5e7eb)";
+
+    const panelBorder = darkMode ? "#1f2937" : "#e5e7eb";
+    const subtitleColor = darkMode ? "rgba(148,163,184,0.8)" : "#6b7280";
+
+    const closeBtnBg = darkMode ? "#0f172a" : "#e5e7eb";
+    const closeBtnBorder = darkMode ? "#1f2937" : "#d1d5db";
+
+    const primaryBtnBg = darkMode
+        ? "linear-gradient(135deg,#22c55e,#16a34a)"
+        : "linear-gradient(135deg,#22c55e,#16a34a)";
+
+    const primaryBtnText = "#f9fafb";
 
     return (
         <div
             style={{
                 position: "fixed",
                 inset: 0,
-                backgroundColor: "rgba(15,23,42,0.65)",
+                backgroundColor: overlayBg, // ✅ theo darkMode
+                backdropFilter: "blur(10px)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -114,13 +136,16 @@ const NodeMapModal: React.FC<NodeMapModalProps> = ({
                 style={{
                     width: "min(900px, 96vw)",
                     height: "min(560px, 90vh)",
-                    backgroundColor: popupBg,
+                    background: panelBg, // ✅ theo darkMode
                     borderRadius: 18,
-                    border: `1px solid ${cardBorder}`,
+                    border: `1px solid ${panelBorder}`,
                     padding: 16,
                     display: "flex",
                     flexDirection: "column",
                     color: textColor,
+                    boxShadow: darkMode
+                        ? "0 24px 80px rgba(15,23,42,0.9)"
+                        : "0 24px 80px rgba(15,23,42,0.3)",
                 }}
                 onClick={(e) => e.stopPropagation()}
             >
@@ -139,7 +164,12 @@ const NodeMapModal: React.FC<NodeMapModalProps> = ({
                                 ? t("map.single.title", { devAddr: mode.devAddr })
                                 : t("map.all.title")}
                         </div>
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>
+                        <div
+                            style={{
+                                fontSize: 12,
+                                color: subtitleColor, // ✅
+                            }}
+                        >
                             {mode.type === "single"
                                 ? t("map.single.subtitle")
                                 : t("map.all.subtitle", { count: markers.length })}
@@ -152,8 +182,8 @@ const NodeMapModal: React.FC<NodeMapModalProps> = ({
                         style={{
                             padding: "6px 10px",
                             borderRadius: 999,
-                            background: "transparent",
-                            border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
+                            background: closeBtnBg,
+                            border: `1px solid ${closeBtnBorder}`,
                             color: textColor,
                             cursor: "pointer",
                             fontSize: 12,
@@ -170,6 +200,7 @@ const NodeMapModal: React.FC<NodeMapModalProps> = ({
                         borderRadius: 14,
                         overflow: "hidden",
                         border: `1px solid ${cardBorder}`,
+                        backgroundColor: darkMode ? "#020617" : popupBg,
                     }}
                 >
                     <MapContainer
@@ -178,8 +209,16 @@ const NodeMapModal: React.FC<NodeMapModalProps> = ({
                         style={{ width: "100%", height: "100%" }}
                     >
                         <TileLayer
-                            attribution="&copy; OpenStreetMap contributors"
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            attribution={
+                                darkMode
+                                    ? '&copy; <a href="https://carto.com/">CARTO</a> contributors'
+                                    : "&copy; OpenStreetMap contributors"
+                            }
+                            url={
+                                darkMode
+                                    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                                    : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            }
                         />
 
                         <ClickToSetLocation
@@ -197,7 +236,7 @@ const NodeMapModal: React.FC<NodeMapModalProps> = ({
                             if (sensor) {
                                 let offline = false;
 
-                                // ✅ chỉ tính offline nếu có timestamp
+                                // chỉ tính offline nếu có timestamp
                                 if (sensor.timestamp) {
                                     const ts = new Date(sensor.timestamp).getTime();
                                     if (!Number.isNaN(ts)) {
@@ -236,7 +275,7 @@ const NodeMapModal: React.FC<NodeMapModalProps> = ({
                                     fillColor={colors[status].fill}
                                 >
                                     <Popup>
-                                        <div style={{ fontSize: 12 }}>
+                                        <div style={{ fontSize: 12, color: "#0f172a" }}>
                                             <strong>Node {node.devAddr}</strong>
                                             <br />
                                             Lat: {loc.lat.toFixed(5)}, Lng: {loc.lng.toFixed(5)}
@@ -249,6 +288,24 @@ const NodeMapModal: React.FC<NodeMapModalProps> = ({
                         })}
                     </MapContainer>
                 </div>
+
+                {/* Nếu sau này cần nút Lưu vị trí / Reset thì dùng primaryBtnBg / primaryBtnText */}
+                {/* <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            style={{
+              padding: "8px 14px",
+              borderRadius: 999,
+              border: "none",
+              background: primaryBtnBg,
+              color: primaryBtnText,
+              fontSize: 12,
+              cursor: "pointer",
+            }}
+          >
+            {t("map.actions.save")}
+          </button>
+        </div> */}
             </div>
         </div>
     );

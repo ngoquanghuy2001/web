@@ -228,14 +228,16 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                             onClick={openReportModal}
                             style={{
                                 padding: "8px 16px",
-                                borderRadius: 999,
+                                borderRadius: 20,
                                 border: "none",
                                 background: "linear-gradient(135deg, #ef4444, #b91c1c)",
                                 color: "#f9fafb",
-                                fontSize: 13,
+                                fontSize: 20,
                                 fontWeight: 600,
                                 cursor: "pointer",
                                 boxShadow: "0 8px 20px rgba(239,68,68,0.35)",
+                                width: "290px",
+                                height: "80px",
                             }}
                         >
                             {t("nodeDetail.summary.reportButton")}

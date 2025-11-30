@@ -39,7 +39,7 @@
         "nodeMenu": {
             "title": "Options",
             "header": "Node actions",
-            "reportIncident": "Report incident"
+            "reportIncident": "Report to ranger"
         },
         "settings": {
             "header": "Settings",
@@ -48,7 +48,7 @@
         "summary": {
             "title": "Node {{devAddr}} details",
             "description": "Showing up to the 20 most recent sensor packets for this node.",
-            "reportButton": "Report incident"
+            "reportButton": "Report to ranger"
         },
         "stats": {
             "temperature": "Current temperature",
@@ -81,7 +81,7 @@
             }
         },
         "report": {
-            "title": "Report incident for node {{devAddr}}",
+            "title": "Report to ranger for node {{devAddr}}",
             "confirmText": "Are you sure you want to send an incident report for this node?",
             "no": "No",
             "yesSend": "Yes, send report",
@@ -119,7 +119,7 @@
         },
         "main": {
             "title": "Dashboard",
-            "description": "Monitor sensor nodes (DevAddr) in real time. You can add/remove nodes and view detailed data for each node."
+            "description": "Monitor sensor nodes in real time. You can add/remove and view detailed data for each node."
         },
         "actions": {
             "addNode": "Add node",
@@ -137,15 +137,15 @@
         "nodes": {
             "title": "Node list",
             "subtitle": "Total {{count}} nodes – click each node to see details.",
-            "empty": "No nodes yet. Click \"Add node\" to add a new DevAddr."
+            "empty": "No nodes yet. Click \"Add node\" to add a new node."
         },
         "addNode": {
             "title": "Add new node",
-            "description": "Enter the DevAddr (positive integer) of the sensor node you want to monitor.",
-            "label": "DevAddr",
+            "description": "Enter the id (positive integer) of the sensor node you want to monitor.",
+            "label": "Id of node",
             "placeholder": "Example: 1, 2, 3...",
-            "invalidDevAddr": "DevAddr must be a positive integer.",
-            "duplicateDevAddr": "DevAddr {{devAddr}} already exists in the list.",
+            "invalidDevAddr": "Id must be a positive integer.",
+            "duplicateDevAddr": "Node {{devAddr}} already exists in the list.",
             "cancel": "Cancel",
             "submit": "Add node",
             "map": {
@@ -157,7 +157,7 @@
         },
         "deleteNode": {
             "title": "Delete node",
-            "description": "Are you sure you want to delete node DevAddr {{devAddr}} from the dashboard?",
+            "description": "Are you sure you want to delete node {{devAddr}} from the dashboard?",
             "cancel": "Cancel",
             "confirm": "Delete"
         }
