@@ -25,7 +25,8 @@
             "noDataYet": "Node will show data as soon as the first packet is received.",
             "safe": "Temperature and CO₂ are within safe thresholds.",
             "warning": "Danger: temperature or CO₂ exceeds safe thresholds."
-        }
+        },
+        "viewLocation": "View location"
     },
     "nodeDetail": {
         "noEmail": "No email",
@@ -121,7 +122,8 @@
             "description": "Monitor sensor nodes (DevAddr) in real time. You can add/remove nodes and view detailed data for each node."
         },
         "actions": {
-            "addNode": "Add node"
+            "addNode": "Add node",
+            "viewAllNodes": "View all nodes on map"
         },
         "summary": {
             "totalNodes": "Total nodes",
@@ -145,13 +147,32 @@
             "invalidDevAddr": "DevAddr must be a positive integer.",
             "duplicateDevAddr": "DevAddr {{devAddr}} already exists in the list.",
             "cancel": "Cancel",
-            "submit": "Add node"
+            "submit": "Add node",
+            "map": {
+                "title": "Node location",
+                "hint": "Click on the map to choose the node location. You can adjust it later from the node detail screen.",
+                "noLocation": "No location selected",
+                "picked": "Selected: Lat {{lat}}, Lng {{lng}}"
+            }
         },
         "deleteNode": {
             "title": "Delete node",
             "description": "Are you sure you want to delete node DevAddr {{devAddr}} from the dashboard?",
             "cancel": "Cancel",
             "confirm": "Delete"
+        }
+    },
+    "map": {
+        "single": {
+            "title": "Node {{devAddr}} location",
+            "subtitle": "Click on the map to set a new location for this node."
+        },
+        "all": {
+            "title": "All nodes map",
+            "subtitle": "Displaying {{count}} nodes. Zoom out to view full coverage."
+        },
+        "actions": {
+            "close": "Close"
         }
     }
 }

@@ -49,7 +49,34 @@ const App: React.FC = () => {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorKey, setErrorKey] = useState<string | null>(null);
-  const [nodeLocations, setNodeLocations] = useState<Record<number, NodeLocation>>({});
+  const [nodeLocations, setNodeLocations] = useState<Record<number, NodeLocation>>(() => {
+    try {
+      const raw = localStorage.getItem(LOCATION_STORAGE_KEY);
+      if (!raw) return {};
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return {};
+
+      const clean: Record<number, NodeLocation> = {};
+      for (const [key, value] of Object.entries(parsed)) {
+        const devAddr = Number(key);
+        if (!Number.isInteger(devAddr)) continue;
+        if (!value || typeof value !== "object") continue;
+
+        const lat = Number((value as any).lat);
+        const lng = Number((value as any).lng);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          clean[devAddr] = { lat, lng };
+        }
+      }
+
+      return clean;
+    } catch (e) {
+      console.error("Không đọc được node locations từ localStorage", e);
+      return {};
+    }
+  });
+
 
   const [sensorDataMap, setSensorDataMap] = useState<
     Record<number, SensorData | null>

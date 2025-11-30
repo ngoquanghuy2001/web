@@ -25,7 +25,8 @@
             "noDataYet": "Node sẽ hiển thị dữ liệu ngay khi có gói tin đầu tiên.",
             "safe": "Nhiệt độ và CO₂ đang nằm trong ngưỡng an toàn.",
             "warning": "Nguy hiểm: nhiệt độ hoặc CO₂ vượt ngưỡng an toàn."
-        }
+        },
+        "viewLocation": "Xem vị trí"
     },
     "nodeDetail": {
         "noEmail": "Không có email",
@@ -121,7 +122,8 @@
             "description": "Giám sát trạng thái các node cảm biến (DevAddr) theo thời gian thực. Bạn có thể thêm / xoá node và xem chi tiết từng node."
         },
         "actions": {
-            "addNode": "Thêm node"
+            "addNode": "Thêm node",
+            "viewAllNodes": "Xem toàn bộ node trên bản đồ"
         },
         "summary": {
             "totalNodes": "Tổng số node",
@@ -145,13 +147,32 @@
             "invalidDevAddr": "DevAddr phải là số nguyên dương.",
             "duplicateDevAddr": "DevAddr {{devAddr}} đã tồn tại trong danh sách.",
             "cancel": "Huỷ",
-            "submit": "Thêm node"
+            "submit": "Thêm node",
+            "map": {
+                "title": "Vị trí node",
+                "hint": "Nhấn vào bản đồ để chọn vị trí node. Bạn có thể chỉnh lại sau trong màn hình chi tiết node.",
+                "noLocation": "Chưa chọn vị trí",
+                "picked": "Đã chọn: Lat {{lat}}, Lng {{lng}}"
+            }
         },
         "deleteNode": {
             "title": "Xoá node",
             "description": "Bạn có chắc chắn muốn xoá node DevAddr {{devAddr}} khỏi dashboard?",
             "cancel": "Huỷ",
             "confirm": "Xoá"
+        }
+    },
+    "map": {
+        "single": {
+            "title": "Vị trí Node {{devAddr}}",
+            "subtitle": "Nhấn vào bản đồ để đặt lại vị trí của node."
+        },
+        "all": {
+            "title": "Bản đồ toàn bộ node",
+            "subtitle": "Hiển thị {{count}} node. Phóng to/thu nhỏ để quan sát toàn bộ hệ thống."
+        },
+        "actions": {
+            "close": "Đóng"
         }
     }
 }

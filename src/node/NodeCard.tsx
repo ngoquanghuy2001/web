@@ -1,7 +1,6 @@
 import React from "react";
-import { SensorData } from "../api/appsyncClient";
 import { useTranslation } from "react-i18next";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { SensorData } from "../api/appsyncClient";
 
 export interface NodeCardProps {
     devAddr: number;
@@ -9,12 +8,9 @@ export interface NodeCardProps {
     sensorLoaded: boolean;
     onRemove?: (devAddr: number) => void;
     onMoreDetails?: (devAddr: number) => void;
-
+    onViewLocation?: (devAddr: number) => void;
     darkMode?: boolean;
 }
-
-const formatValue = (value?: number | null, unit?: string) =>
-    value === null || value === undefined ? "--" : `${value}${unit ?? ""}`;
 
 const NodeCard: React.FC<NodeCardProps> = ({
     devAddr,
@@ -22,48 +18,48 @@ const NodeCard: React.FC<NodeCardProps> = ({
     sensorLoaded,
     onRemove,
     onMoreDetails,
+    onViewLocation,
     darkMode = true,
 }) => {
-    const { t } = useTranslation(); // 🔹 dùng i18n
+    const { t } = useTranslation();
 
-    const temperature = sensorData?.temperature;
-    const humidity = sensorData?.humidity;
-    const co2 = sensorData?.co2;
+    const temperature = sensorData?.temperature ?? null;
+    const humidity = sensorData?.humidity ?? null;
+    const co2 = sensorData?.co2 ?? null;
+    const fire = sensorData?.fire ?? false;
+    const battery = sensorData?.battery ?? null;
     const timestamp = sensorData?.timestamp ?? null;
 
-    // Tính trạng thái offline dựa trên timestamp
-    const lastTimestampMs = timestamp ? new Date(timestamp).getTime() : NaN;
-    const isOffline =
-        !!timestamp &&
-        !Number.isNaN(lastTimestampMs) &&
-        Date.now() - lastTimestampMs > 60_000;
+    const hasData = !!sensorData;
 
     const isWarning =
-        (sensorData?.fire ?? false) ||
-        (temperature !== undefined &&
-            temperature !== null &&
-            temperature >= 40) ||
-        (co2 !== undefined && co2 !== null && co2 >= 2000);
+        !!sensorData &&
+        (fire === true ||
+            (temperature != null && temperature >= 40) ||
+            (co2 != null && co2 >= 2000));
 
-    // 🔹 status text dùng key i18n
-    let statusKey = "nodeCard.status.safe";
+    let isOffline = false;
+    if (timestamp) {
+        const ms = new Date(timestamp).getTime();
+        if (!Number.isNaN(ms)) {
+            isOffline = Date.now() - ms > 60_000;
+        }
+    }
 
-    if (!timestamp) {
+    let statusKey: string = "nodeCard.status.safe";
+
+    if (!hasData || !sensorLoaded) {
         statusKey = "nodeCard.status.noData";
-    } else if (isOffline) {
-        statusKey = "nodeCard.status.offline";
     } else if (isWarning) {
         statusKey = "nodeCard.status.warning";
+    } else if (isOffline) {
+        statusKey = "nodeCard.status.offline";
     }
 
     const statusText = t(statusKey);
 
-    const handleRemoveClick = () => {
-        onRemove?.(devAddr);
-    };
-
-    const baseBadgeStyle: React.CSSProperties = {
-        padding: "4px 10px",
+    const baseBadge: React.CSSProperties = {
+        padding: "3px 9px",
         borderRadius: 999,
         fontSize: 11,
         fontWeight: 700,
@@ -71,53 +67,45 @@ const NodeCard: React.FC<NodeCardProps> = ({
         letterSpacing: 0.7,
     };
 
-    // =========================
-    // Badge màu theo trạng thái + theme
-    // =========================
-    let badgeStyle: React.CSSProperties;
-
-    if (!timestamp) {
-        // No data
-        badgeStyle = darkMode
+    let statusStyle: React.CSSProperties;
+    if (!hasData || !sensorLoaded) {
+        statusStyle = darkMode
             ? {
-                backgroundColor: "rgba(148,163,184,0.18)",
+                backgroundColor: "rgba(148,163,184,0.16)",
                 color: "#e5e7eb",
-                border: "1px solid rgba(148,163,184,0.7)",
+                border: "1px solid rgba(148,163,184,0.5)",
             }
             : {
                 backgroundColor: "#e5e7eb",
-                color: "#374151",
-                border: "1px solid #9ca3af",
-            };
-    } else if (isOffline) {
-        // Offline
-        badgeStyle = darkMode
-            ? {
-                backgroundColor: "rgba(148,163,184,0.18)",
-                color: "#e5e7eb",
-                border: "1px solid rgba(148,163,184,0.9)",
-            }
-            : {
-                backgroundColor: "#e5e7eb",
-                color: "#4b5563",
+                color: "#111827",
                 border: "1px solid #9ca3af",
             };
     } else if (isWarning) {
-        // Warning
-        badgeStyle = darkMode
+        statusStyle = darkMode
             ? {
-                backgroundColor: "rgba(248,113,113,0.18)",
+                backgroundColor: "rgba(239,68,68,0.16)",
                 color: "#fecaca",
-                border: "1px solid rgba(248,113,113,0.85)",
+                border: "1px solid rgba(239,68,68,0.7)",
             }
             : {
                 backgroundColor: "#fee2e2",
                 color: "#b91c1c",
-                border: "1px solid #fca5a5",
+                border: "1px solid #f97316",
+            };
+    } else if (isOffline) {
+        statusStyle = darkMode
+            ? {
+                backgroundColor: "rgba(249,115,22,0.12)",
+                color: "#fed7aa",
+                border: "1px solid rgba(249,115,22,0.7)",
+            }
+            : {
+                backgroundColor: "#ffedd5",
+                color: "#9a3412",
+                border: "1px solid #f97316",
             };
     } else {
-        // Safe
-        badgeStyle = darkMode
+        statusStyle = darkMode
             ? {
                 backgroundColor: "rgba(34,197,94,0.16)",
                 color: "#bbf7d0",
@@ -130,239 +118,161 @@ const NodeCard: React.FC<NodeCardProps> = ({
             };
     }
 
-    // =========================
-    // Card style theo theme
-    // =========================
-    const cardBaseStyle: React.CSSProperties = {
-        position: "relative",
-        borderRadius: 16,
-        padding: 16,
-        backgroundColor: darkMode ? "#020617" : "#ffffff",
-        border: darkMode ? "1px solid #1f2937" : "1px solid #e5e7eb",
-        boxShadow: darkMode
-            ? "0 10px 25px rgba(15,23,42,0.5)"
-            : "0 10px 20px rgba(15,23,42,0.08)",
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        overflow: "hidden",
-        minHeight: 190,
-        color: darkMode ? "#e5e7eb" : "#0f172a",
-    };
+    const cardBorder = darkMode ? "#1f2937" : "#e5e7eb";
+    const cardBg = darkMode
+        ? "radial-gradient(circle at 0 0, rgba(56,189,248,0.16), rgba(15,23,42,1))"
+        : "radial-gradient(circle at 0 0, rgba(56,189,248,0.16), #ffffff)";
+    const textMuted = darkMode ? "rgba(148,163,184,0.9)" : "#6b7280";
 
-    const warningBorderStyle: React.CSSProperties = isWarning
-        ? darkMode
-            ? {
-                border: "1px solid rgba(248,113,113,0.9)",
-                boxShadow:
-                    "0 0 0 1px rgba(248,113,113,0.4), 0 0 25px rgba(248,113,113,0.35)",
-            }
-            : {
-                border: "1px solid #fca5a5",
-                boxShadow:
-                    "0 0 0 1px rgba(248,113,113,0.2), 0 0 18px rgba(248,113,113,0.25)",
-            }
-        : {};
-
-    const overlayBg = darkMode
-        ? "radial-gradient(circle at top left, rgba(56,189,248,0.15), transparent 55%)"
-        : "radial-gradient(circle at top left, rgba(59,130,246,0.12), transparent 55%)";
+    const handleRemove = () => onRemove?.(devAddr);
+    const handleDetails = () => onMoreDetails?.(devAddr);
+    const handleViewLocationClick = () => onViewLocation?.(devAddr);
 
     return (
         <div
             style={{
-                ...cardBaseStyle,
-                ...warningBorderStyle,
+                borderRadius: 18,
+                border: `1px solid ${cardBorder}`,
+                background: cardBg,
+                padding: 14,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                minHeight: 180,
             }}
         >
-            {/* Hiệu ứng nền mờ phía sau */}
-            <div
-                style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: overlayBg,
-                    opacity: 0.7,
-                    pointerEvents: "none",
-                }}
-            />
-
-            {/* Nếu đang cảnh báo, hiển thị icon ⚠ nổi ở góc */}
-            {isWarning && (
-                <div
-                    style={{
-                        position: "absolute",
-                        top: 10,
-                        right: 10,
-                        fontSize: 20,
-                        color: darkMode ? "#fecaca" : "#b91c1c",
-                        opacity: 0.9,
-                    }}
-                >
-                    ⚠
-                </div>
-            )}
-
             {/* Header */}
             <div
                 style={{
                     display: "flex",
-                    alignItems: "center",
                     justifyContent: "space-between",
-                    marginBottom: 4,
                     gap: 8,
-                    position: "relative",
-                    zIndex: 1,
+                    alignItems: "flex-start",
                 }}
             >
                 <div>
                     <div
                         style={{
-                            fontSize: 13,
+                            fontSize: 12,
                             textTransform: "uppercase",
                             letterSpacing: 0.8,
-                            opacity: 0.7,
+                            opacity: 0.8,
                         }}
                     >
-                        {t("nodeCard.nodeLabel")}
+                        {t("nodeCard.nodeLabel")} #{devAddr}
                     </div>
                     <div
                         style={{
-                            fontSize: 18,
-                            fontWeight: 600,
+                            fontSize: 11,
+                            color: textMuted,
                         }}
                     >
-                        {t("nodeCard.devAddr", { devAddr })}
+                        {hasData && timestamp
+                            ? t("nodeCard.lastUpdate", { timestamp })
+                            : t("nodeCard.noUpdateYet")}
                     </div>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {/* Badge trạng thái */}
-                    <span
-                        style={{
-                            ...baseBadgeStyle,
-                            ...badgeStyle,
-                        }}
-                    >
-                        {statusText}
-                    </span>
-
-                    {/* nút xoá node */}
-                    {onRemove && (
-                        <button
-                            type="button"
-                            onClick={handleRemoveClick}
-                            style={{
-                                width: 24,
-                                height: 24,
-                                borderRadius: 999,
-                                border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
-                                background: "transparent",
-                                color: darkMode ? "#9ca3af" : "#6b7280",
-                                cursor: "pointer",
-                                fontWeight: 700,
-                                lineHeight: "22px",
-                                fontSize: 14,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                            }}
-                            title={t("nodeCard.removeNodeTitle")}
-                        >
-                            ×
-                        </button>
-                    )}
-                </div>
+                <span style={{ ...baseBadge, ...statusStyle }}>{statusText}</span>
             </div>
 
-            {/* Thời gian cập nhật */}
+            {/* Metrics */}
             <div
                 style={{
-                    fontSize: 11,
-                    opacity: 0.7,
-                    marginBottom: 10,
-                    position: "relative",
-                    zIndex: 1,
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: 8,
+                    fontSize: 12,
                 }}
             >
-                {timestamp
-                    ? t("nodeCard.lastUpdate", { timestamp })
-                    : t("nodeCard.noUpdateYet")}
+                <div>
+                    <div style={{ opacity: 0.7, marginBottom: 2 }}>
+                        {t("nodeCard.temperatureLabel")}
+                    </div>
+                    <div style={{ fontWeight: 600 }}>
+                        {temperature != null ? `${temperature}°C` : "--"}
+                    </div>
+                </div>
+
+                <div>
+                    <div style={{ opacity: 0.7, marginBottom: 2 }}>
+                        {t("nodeCard.humidityLabel")}
+                    </div>
+                    <div style={{ fontWeight: 600 }}>
+                        {humidity != null ? `${humidity}%` : "--"}
+                    </div>
+                </div>
+
+                <div>
+                    <div style={{ opacity: 0.7, marginBottom: 2 }}>
+                        {t("nodeCard.co2Label")}
+                    </div>
+                    <div style={{ fontWeight: 600 }}>
+                        {co2 != null ? `${co2} ppm` : "--"}
+                    </div>
+                </div>
+
+                <div>
+                    <div style={{ opacity: 0.7, marginBottom: 2 }}>
+                        {t("nodeCard.fireStatusLabel")}
+                    </div>
+                    <div style={{ fontWeight: 600 }}>
+                        {hasData
+                            ? fire
+                                ? t("nodeCard.fireStatus.warning")
+                                : t("nodeCard.fireStatus.ok")
+                            : "--"}
+                    </div>
+                </div>
             </div>
 
-            {/* Nếu chưa loaded lần nào */}
-            {!sensorLoaded && (
-                <p
+            {/* Actions + tooltip */}
+            <div
+                style={{
+                    marginTop: 8,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 8,
+                    flexWrap: "wrap",
+                }}
+            >
+                <div
                     style={{
-                        fontSize: 12,
-                        opacity: 0.7,
-                        marginTop: 6,
-                        position: "relative",
-                        zIndex: 1,
+                        display: "flex",
+                        gap: 6,
+                        flexWrap: "wrap",
                     }}
                 >
-                    {t("nodeCard.noSensorDataYet", { devAddr })}
-                </p>
-            )}
-
-            {sensorLoaded && sensorData && (
-                <>
-                    <div
+                    {/* Nút xem vị trí */}
+                    <button
+                        type="button"
+                        onClick={handleViewLocationClick}
                         style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                            gap: 8,
-                            fontSize: 13,
-                            position: "relative",
-                            zIndex: 1,
+                            padding: "6px 10px",
+                            borderRadius: 999,
+                            border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
+                            background: "transparent",
+                            fontSize: 11,
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
                         }}
                     >
-                        <div>
-                            <div style={{ opacity: 0.6, fontSize: 11 }}>
-                                {t("nodeCard.temperatureLabel")}
-                            </div>
-                            <div style={{ fontWeight: 500 }}>
-                                {formatValue(temperature, "°C")}
-                            </div>
-                        </div>
-                        <div>
-                            <div style={{ opacity: 0.6, fontSize: 11 }}>
-                                {t("nodeCard.humidityLabel")}
-                            </div>
-                            <div style={{ fontWeight: 500 }}>
-                                {formatValue(humidity, "%")}
-                            </div>
-                        </div>
-                        <div>
-                            <div style={{ opacity: 0.6, fontSize: 11 }}>
-                                {t("nodeCard.co2Label")}
-                            </div>
-                            <div style={{ fontWeight: 500 }}>
-                                {formatValue(co2, " ppm")}
-                            </div>
-                        </div>
-                        <div>
-                            <div style={{ opacity: 0.6, fontSize: 11 }}>
-                                {t("nodeCard.fireStatusLabel")}
-                            </div>
-                            <div style={{ fontWeight: 500 }}>
-                                {sensorData.fire
-                                    ? t("nodeCard.fireStatus.warning")
-                                    : t("nodeCard.fireStatus.ok")}
-                            </div>
-                        </div>
-                    </div>
+                        <span>📍</span>
+                        {t("nodeCard.viewLocation")}
+                    </button>
 
-                    {/* Link xem chi tiết */}
+                    {/* Xem chi tiết */}
                     {onMoreDetails && (
                         <button
                             type="button"
-                            onClick={() => onMoreDetails(devAddr)}
+                            onClick={handleDetails}
                             style={{
-                                marginTop: 10,
-                                alignSelf: "flex-start",
                                 padding: "6px 10px",
                                 borderRadius: 999,
-                                border: `1px solid ${darkMode ? "#374151" : "#d1d5db"}`,
+                                border: "none",
                                 background: darkMode
                                     ? "linear-gradient(135deg, rgba(15,23,42,1), rgba(15,23,42,0.7))"
                                     : "linear-gradient(135deg, #ffffff, #e5e7eb)",
@@ -371,48 +281,48 @@ const NodeCard: React.FC<NodeCardProps> = ({
                                 textTransform: "uppercase",
                                 letterSpacing: 0.8,
                                 cursor: "pointer",
-                                position: "relative",
-                                zIndex: 1,
                             }}
                         >
                             {t("nodeCard.viewDetail")}
                         </button>
                     )}
-                </>
-            )}
 
-            {/* Tooltip nhỏ giải thích cảnh báo */}
-            <div
-                style={{
-                    marginTop: 10,
-                    borderTop: "1px dashed rgba(148,163,184,0.4)",
-                    paddingTop: 6,
-                    fontSize: 11,
-                    opacity: 0.75,
-                    display: "flex",
-                    gap: 8,
-                    alignItems: "flex-start",
-                    position: "relative",
-                    zIndex: 1,
-                }}
-            >
-                <span style={{ fontSize: 14 }}>ℹ</span>
-                {!sensorData && (
-                    <span>{t("nodeCard.tooltip.noDataYet")}</span>
-                )}
-                {sensorData && !isWarning && (
-                    <span>{t("nodeCard.tooltip.safe")}</span>
-                )}
-                {sensorData && isWarning && (
-                    <div
-                        style={{
-                            textAlign: "left",
-                            maxWidth: "100%",
-                        }}
-                    >
-                        <span>{t("nodeCard.tooltip.warning")}</span>
-                    </div>
-                )}
+                    {/* Xoá node */}
+                    {onRemove && (
+                        <button
+                            type="button"
+                            onClick={handleRemove}
+                            style={{
+                                padding: "6px 10px",
+                                borderRadius: 999,
+                                border: `1px solid ${darkMode ? "#4b5563" : "#fecaca"}`,
+                                background: darkMode
+                                    ? "rgba(127,29,29,0.25)"
+                                    : "rgba(254,202,202,0.7)",
+                                color: darkMode ? "#fecaca" : "#7f1d1d",
+                                fontSize: 11,
+                                cursor: "pointer",
+                            }}
+                        >
+                            {t("nodeCard.removeNodeTitle")}
+                        </button>
+                    )}
+                </div>
+
+                {/* Tooltip trạng thái */}
+                <div
+                    style={{
+                        fontSize: 11,
+                        color: textMuted,
+                        maxWidth: 160,
+                    }}
+                >
+                    {!hasData || !sensorLoaded
+                        ? t("nodeCard.tooltip.noDataYet")
+                        : isWarning
+                            ? t("nodeCard.tooltip.warning")
+                            : t("nodeCard.tooltip.safe")}
+                </div>
             </div>
         </div>
     );

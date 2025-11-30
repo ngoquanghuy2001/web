@@ -7,6 +7,7 @@ import DashboardSummary from "./dashboard/DashboardSummary";
 import DashboardNodeGrid from "./dashboard/DashboardNodeGrid";
 import AddNodeModal from "./dashboard/AddNodeModal";
 import DeleteNodeModal from "./dashboard/DeleteNodeModal";
+import NodeMapModal from "./map/NodeMapModal";
 
 export interface UserInfo {
   username: string;
@@ -19,16 +20,16 @@ export interface DashboardNode {
   sensorLoaded: boolean;
 }
 
-type NodeLocation = {
+export type NodeLocation = {
   lat: number;
   lng: number;
 };
 
-interface DashboardProps {
+export interface DashboardProps {
   user: UserInfo;
   nodes: DashboardNode[];
   onLogout?: () => void;
-  onAddNode?: (devAddr: number) => void;
+  onAddNode?: (devAddr: number, location: NodeLocation | null) => void;
   onRemoveNode?: (devAddr: number) => void;
   onOpenNodeDetail?: (devAddr: number) => void;
 
@@ -38,6 +39,11 @@ interface DashboardProps {
   nodeLocations: Record<number, NodeLocation>;
   onUpdateNodeLocation: (devAddr: number, loc: NodeLocation) => void;
 }
+
+type MapMode =
+  | null
+  | { type: "single"; devAddr: number }
+  | { type: "all" };
 
 const Dashboard: React.FC<DashboardProps> = ({
   user,
@@ -57,7 +63,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [now, setNow] = useState(Date.now());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [mapMode, setMapMode] = useState<MapMode>(null);
 
+  // Cập nhật "now" để tính node hoạt động / offline
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 10000);
     return () => window.clearInterval(id);
@@ -68,7 +76,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (!ts) return false;
     const ms = new Date(ts).getTime();
     if (Number.isNaN(ms)) return false;
-    return now - ms <= 60_000; // 60s gần nhất
+    return now - ms <= 60_000;
   };
 
   const totalNodes = nodes.length;
@@ -86,6 +94,35 @@ const Dashboard: React.FC<DashboardProps> = ({
   const bgRoot = darkMode ? "#020617" : "#f3f4f6";
   const textColor = darkMode ? "#e5e7eb" : "#0f172a";
 
+  const handleAddNode = (devAddr: number, loc: NodeLocation | null) => {
+    if (onAddNode) {
+      onAddNode(devAddr, loc);
+    }
+
+    if (loc) {
+      onUpdateNodeLocation(devAddr, loc);
+    }
+  };
+
+  const handleConfirmDelete = (addr: number | null) => {
+    if (addr != null && onRemoveNode) {
+      onRemoveNode(addr);
+    }
+    setDeleteTarget(null);
+  };
+
+  const handleViewNodeLocation = (devAddr: number) => {
+    setMapMode({ type: "single", devAddr });
+  };
+
+  const handleViewAllNodes = () => {
+    setMapMode({ type: "all" });
+  };
+
+  const handleCloseMap = () => {
+    setMapMode(null);
+  };
+
   return (
     <div
       style={{
@@ -98,6 +135,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         flexDirection: "column",
       }}
     >
+      {/* HEADER */}
       <DashboardHeader
         user={user}
         gmail={gmail}
@@ -106,6 +144,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         onToggleDarkMode={onToggleDarkMode}
       />
 
+      {/* MAIN */}
       <main
         style={{
           padding: "24px 32px 40px",
@@ -115,7 +154,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           margin: "0 auto",
         }}
       >
-        {/* Tiêu đề + nút Add node */}
+        {/* Tiêu đề + nút Add node + View all on map */}
         <div
           style={{
             display: "flex",
@@ -138,9 +177,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <p
               style={{
                 fontSize: 13,
-                color: darkMode
-                  ? "rgba(148,163,184,0.75)"
-                  : "#6b7280",
+                color: darkMode ? "rgba(148,163,184,0.75)" : "#6b7280",
                 maxWidth: 420,
               }}
             >
@@ -153,8 +190,32 @@ const Dashboard: React.FC<DashboardProps> = ({
               display: "flex",
               alignItems: "flex-end",
               justifyContent: "flex-end",
+              gap: 8,
+              flexWrap: "wrap",
             }}
           >
+            {/* Nút xem toàn bộ node trên map */}
+            <button
+              type="button"
+              onClick={handleViewAllNodes}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 999,
+                border: `1px solid ${darkMode ? "#334155" : "#cbd5f5"}`,
+                background: "transparent",
+                color: textColor,
+                fontSize: 12,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <span>📍</span>
+              {t("dashboard.actions.viewAllNodes")}
+            </button>
+
+            {/* Nút thêm node */}
             <button
               type="button"
               onClick={() => setIsAddModalOpen(true)}
@@ -190,6 +251,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
+        {/* Summary cards */}
         <DashboardSummary
           darkMode={darkMode}
           totalNodes={totalNodes}
@@ -198,33 +260,45 @@ const Dashboard: React.FC<DashboardProps> = ({
           lastUpdate={lastUpdate}
         />
 
+        {/* Grid node */}
         <DashboardNodeGrid
           nodes={nodes}
           totalNodes={totalNodes}
           darkMode={darkMode}
           onOpenNodeDetail={onOpenNodeDetail}
           onRequestDelete={(devAddr) => setDeleteTarget(devAddr)}
+          onViewLocation={handleViewNodeLocation}
         />
       </main>
 
+      {/* POPUP thêm node */}
       <AddNodeModal
         isOpen={isAddModalOpen}
         darkMode={darkMode}
         onClose={() => setIsAddModalOpen(false)}
-        onSubmitDevAddr={(value) => {
-          onAddNode?.(value);
+        onSubmitDevAddr={(devAddr, loc) => {
+          handleAddNode(devAddr, loc);
           setIsAddModalOpen(false);
         }}
       />
 
+      {/* POPUP xoá node */}
       <DeleteNodeModal
         devAddr={deleteTarget}
         darkMode={darkMode}
         onCancel={() => setDeleteTarget(null)}
-        onConfirm={(addr) => {
-          if (addr != null) onRemoveNode?.(addr);
-          setDeleteTarget(null);
-        }}
+        onConfirm={handleConfirmDelete}
+      />
+
+      {/* MAP MODAL */}
+      <NodeMapModal
+        isOpen={mapMode !== null}
+        mode={mapMode}
+        nodes={nodes}
+        nodeLocations={nodeLocations}
+        darkMode={darkMode}
+        onClose={handleCloseMap}
+        onUpdateNodeLocation={onUpdateNodeLocation}
       />
     </div>
   );

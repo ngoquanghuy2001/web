@@ -9,6 +9,7 @@ interface Props {
   darkMode: boolean;
   onOpenNodeDetail?: (devAddr: number) => void;
   onRequestDelete: (devAddr: number) => void;
+  onViewLocation?: (devAddr: number) => void;
 }
 
 const DashboardNodeGrid: React.FC<Props> = ({
@@ -17,6 +18,7 @@ const DashboardNodeGrid: React.FC<Props> = ({
   darkMode,
   onOpenNodeDetail,
   onRequestDelete,
+  onViewLocation,
 }) => {
   const { t } = useTranslation();
   const cardBorder = darkMode ? "#1f2937" : "#e5e7eb";
@@ -82,6 +84,7 @@ const DashboardNodeGrid: React.FC<Props> = ({
                 sensorLoaded={node.sensorLoaded}
                 onRemove={(devAddr) => onRequestDelete(devAddr)}
                 onMoreDetails={onOpenNodeDetail}
+                onViewLocation={onViewLocation}
                 darkMode={darkMode}
               />
             ))}
