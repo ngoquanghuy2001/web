@@ -184,15 +184,18 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({
             onChange={(e) => setDevAddrText(e.target.value)}
             placeholder={t("dashboard.addNode.placeholder") ?? ""}
             style={{
-              width: "100%",
+              width: "95%",
               padding: "8px 10px",
-              borderRadius: 10,
               border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"
                 }`,
+              borderTop: "none",
+              borderLeft: "none",
+              borderRight: "none",
               backgroundColor: darkMode ? "#020617" : "#ffffff",
               color: textColor,
               fontSize: 13,
               outline: "none",
+
             }}
           />
           {error && (
@@ -243,8 +246,16 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({
               style={{ width: "100%", height: "100%" }}
             >
               <TileLayer
-                attribution="&copy; OpenStreetMap contributors"
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution={
+                  darkMode
+                    ? '&copy; <a href="https://carto.com/">CARTO</a> contributors'
+                    : "&copy; OpenStreetMap contributors"
+                }
+                url={
+                  darkMode
+                    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                }
               />
 
               <ClickToPickLocation
