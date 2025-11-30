@@ -3,7 +3,7 @@ export const COGNITO_DOMAIN = "ap-southeast-2jt7cayu2p.auth.ap-southeast-2.amazo
 
 export const COGNITO_CLIENT_ID = "39jjer944lr0vpsbt4v7aejno8";
 
-export const REDIRECT_URI = "https://www.wildfire-warning-phenikaa.click/";
+export const REDIRECT_URI = "http://localhost:3000/";
 export const RESPONSE_TYPE = "code";
 export const PROJECT_REGION = "ap-southeast-2";
 export const COGNITO_REGION = "ap-southeast-2";

@@ -1,6 +1,7 @@
 import React from "react";
 import { SensorData } from "../api/appsyncClient";
-import { useTranslation } from "react-i18next"; // 🔹 thêm
+import { useTranslation } from "react-i18next";
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 
 export interface NodeCardProps {
     devAddr: number;
@@ -9,7 +10,6 @@ export interface NodeCardProps {
     onRemove?: (devAddr: number) => void;
     onMoreDetails?: (devAddr: number) => void;
 
-    // NEW: nhận theme từ Dashboard
     darkMode?: boolean;
 }
 

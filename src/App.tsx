@@ -22,6 +22,13 @@ const LOCAL_STORAGE_KEY = "wildfire_dashboard_nodes";
 const HISTORY_STORAGE_KEY = "wildfire_history";
 // Lưu theme
 const THEME_STORAGE_KEY = "wildfire_theme";
+// Lưu vị trí bản đồ
+const LOCATION_STORAGE_KEY = "wildfire_node_locations";
+
+type NodeLocation = {
+  lat: number;
+  lng: number;
+};
 
 const getInitialTheme = (): boolean => {
   if (typeof window === "undefined") return true;
@@ -30,20 +37,19 @@ const getInitialTheme = (): boolean => {
     if (saved === "light") return false;
     if (saved === "dark") return true;
   } catch {
-    // ignore
   }
-  // mặc định dark
   return true;
 };
 
 const App: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation(); // 🔹 dùng i18n
+  const { t } = useTranslation();
 
   const [jwt, setJwt] = useState<string | null>(null);
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [errorKey, setErrorKey] = useState<string | null>(null); // 🔹 lưu key i18n
+  const [errorKey, setErrorKey] = useState<string | null>(null);
+  const [nodeLocations, setNodeLocations] = useState<Record<number, NodeLocation>>({});
 
   const [sensorDataMap, setSensorDataMap] = useState<
     Record<number, SensorData | null>
@@ -186,6 +192,49 @@ const App: React.FC = () => {
       return changed ? next : prev;
     });
   }, [devAddrs, sensorHistoryMap]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LOCATION_STORAGE_KEY);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return;
+
+      const clean: Record<number, NodeLocation> = {};
+      for (const [key, value] of Object.entries(parsed)) {
+        const devAddr = Number(key);
+        if (!Number.isInteger(devAddr)) continue;
+        if (!value || typeof value !== "object") continue;
+
+        const lat = Number((value as any).lat);
+        const lng = Number((value as any).lng);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          clean[devAddr] = { lat, lng };
+        }
+      }
+
+      setNodeLocations(clean);
+    } catch (e) {
+      console.error("Không đọc được node locations từ localStorage", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(nodeLocations));
+    } catch (e) {
+      console.error("Không lưu được node locations vào localStorage", e);
+    }
+  }, [nodeLocations]);
+
+  const handleUpdateNodeLocation = (devAddr: number, loc: NodeLocation) => {
+    setNodeLocations((prev) => ({
+      ...prev,
+      [devAddr]: loc,
+    }));
+  };
+
 
   // ============================
   // Handle Add Node
@@ -407,6 +456,8 @@ const App: React.FC = () => {
             onOpenNodeDetail={(devAddr) => navigate(`/node/${devAddr}`)}
             darkMode={darkMode}
             onToggleDarkMode={handleToggleDarkMode}
+            nodeLocations={nodeLocations}
+            onUpdateNodeLocation={handleUpdateNodeLocation}
           />
         }
       />

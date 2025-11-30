@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
     LineChart,
@@ -12,7 +12,12 @@ import {
 
 import { SensorData } from "../api/appsyncClient";
 import { UserInfo } from "../auth";
-import { useTranslation } from "react-i18next"; // 🔹 thêm
+import { useTranslation } from "react-i18next";
+
+import NodeDetailHeader from "../nodedetail/NodeDetailHeader";
+import ReportIncidentModal from "../nodedetail/ReportIncidentModal";
+import ChartCard from "../nodedetail/ChartCard";
+import EmptyChartMessage from "../nodedetail/EmptyChartMessage";
 
 interface NodeDetailPageProps {
     user: UserInfo;
@@ -24,6 +29,16 @@ interface NodeDetailPageProps {
 
 const HISTORY_STORAGE_KEY = "wildfire_history";
 
+const HEADER_KEYS = {
+    battery: "battery",
+    co2: "co2",
+    temperature: "temperature",
+    humidity: "humidity",
+    maxT: "maxT",
+    fire: "fire",
+    timestamp: "timestamp",
+} as const;
+
 const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
     user,
     sensorHistoryMap,
@@ -31,20 +46,13 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
     darkMode = true,
     onToggleDarkMode,
 }) => {
-    const { t, i18n } = useTranslation(); // 🔹 dùng i18n
-
+    const { t } = useTranslation();
     const { devAddr } = useParams<{ devAddr: string }>();
     const devAddrNum = Number(devAddr);
 
     const [history, setHistory] = useState<SensorData[]>([]);
-    const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
-
-    // Popup báo cáo sự cố
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [reportSent, setReportSent] = useState(false);
-
-    // Menu hành động của node (nút 3 chấm)
-    const [isNodeActionsOpen, setIsNodeActionsOpen] = useState(false);
 
     // Đồng bộ history từ state App hoặc localStorage
     useEffect(() => {
@@ -59,8 +67,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
             if (!raw) return;
 
             const parsed = JSON.parse(raw) as Record<string, SensorData[]>;
-            const arr =
-                parsed[devAddrNum] || parsed[String(devAddrNum)];
+            const arr = parsed[devAddrNum] || parsed[String(devAddrNum)];
 
             if (Array.isArray(arr)) {
                 setHistory(arr);
@@ -71,10 +78,9 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
     }, [devAddrNum, sensorHistoryMap]);
 
     const latest = history[0] ?? null;
-
     const gmail = user.attributes.email ?? t("nodeDetail.noEmail");
-    const avatarChar = (user.username || gmail || "U").charAt(0).toUpperCase();
 
+    // Stat cards
     const statCards = useMemo(
         () => [
             {
@@ -97,7 +103,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
         [latest, t]
     );
 
-    // Dữ liệu cho biểu đồ
+    // Dữ liệu cho chart
     const chartData = useMemo(
         () =>
             [...history]
@@ -127,44 +133,17 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
             (latest.temperature != null && latest.temperature >= 40) ||
             (latest.co2 != null && latest.co2 >= 2000));
 
-    // Theme
+    // Theme chung cho body
     const bgRoot = darkMode ? "#020617" : "#f3f4f6";
     const textColor = darkMode ? "#e5e7eb" : "#0f172a";
     const borderColor = darkMode ? "#1f2937" : "#e5e7eb";
-    const headerBg = darkMode ? "rgba(2,6,23,0.96)" : "rgba(255,255,255,0.94)";
     const statCardBg = darkMode
         ? "radial-gradient(circle at 0 0, rgba(56,189,248,0.12), rgba(15,23,42,1))"
         : "radial-gradient(circle at 0 0, rgba(56,189,248,0.16), #ffffff)";
     const sectionBg = darkMode
         ? "radial-gradient(circle at 0 0, rgba(148,163,184,0.16), rgba(15,23,42,1))"
         : "radial-gradient(circle at 0 0, rgba(148,163,184,0.12), #ffffff)";
-    const popupBg = darkMode ? "#020617" : "#ffffff";
-    const cardBorder = borderColor;
     const summaryTextSub = darkMode ? "rgba(148,163,184,0.75)" : "#6b7280";
-
-    const toggleKnobTransform = darkMode ? "translateX(18px)" : "translateX(0px)";
-    const toggleBg = darkMode ? "#22c55e" : "#9ca3af";
-
-    const currentLang = (i18n.language || "vi").split("-")[0] as "vi" | "en";
-
-    const handleChangeLanguage = (lng: "vi" | "en") => {
-        i18n.changeLanguage(lng);
-    };
-    // Mở popup báo cáo
-    const openReportModal = () => {
-        setReportSent(false);
-        setIsReportModalOpen(true);
-    };
-
-    const closeReportModal = () => {
-        setIsReportModalOpen(false);
-    };
-
-    // Khi chọn "Báo cáo sự cố" trong menu 3 chấm
-    const handleReportFromMenu = () => {
-        setIsNodeActionsOpen(false);
-        openReportModal();
-    };
 
     const tableHeaders: Array<keyof typeof HEADER_KEYS> = [
         "battery",
@@ -175,6 +154,20 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
         "fire",
         "timestamp",
     ];
+
+    // Điều khiển modal báo cáo
+    const openReportModal = () => {
+        setReportSent(false);
+        setIsReportModalOpen(true);
+    };
+
+    const handleCloseReportModal = () => {
+        setIsReportModalOpen(false);
+    };
+
+    const handleSendReport = () => {
+        setReportSent(true);
+    };
 
     return (
         <div
@@ -188,308 +181,16 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                 flexDirection: "column",
             }}
         >
-            {/* HEADER */}
-            <header
-                style={{
-                    height: 64,
-                    borderBottom: `1px solid ${borderColor}`,
-                    padding: "0 32px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    backgroundColor: headerBg,
-                    backdropFilter: "blur(10px)",
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 30,
-                }}
-            >
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        position: "relative",
-                    }}
-                >
-                    <button
-                        onClick={onBack}
-                        style={{
-                            borderRadius: 999,
-                            border: `1px solid ${darkMode ? "#334155" : "#d1d5db"}`,
-                            background: "transparent",
-                            color: textColor,
-                            padding: "6px 10px",
-                            cursor: "pointer",
-                            fontSize: 12,
-                        }}
-                    >
-                        ← {t("nodeDetail.back")}
-                    </button>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div>
-                            <div style={{ fontSize: 16, fontWeight: 600 }}>
-                                {t("nodeDetail.header.nodeTitle", { devAddr: devAddrNum })}
-                            </div>
-                            <div
-                                style={{
-                                    fontSize: 11,
-                                    opacity: 0.7,
-                                    textTransform: "uppercase",
-                                    letterSpacing: 1,
-                                }}
-                            >
-                                {t("nodeDetail.header.subtitle")}
-                            </div>
-                        </div>
-
-                        {/* Nút 3 chấm: mở menu lựa chọn */}
-                        <button
-                            type="button"
-                            onClick={() => setIsNodeActionsOpen((v) => !v)}
-                            style={{
-                                width: 28,
-                                height: 28,
-                                borderRadius: 999,
-                                border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
-                                background: "transparent",
-                                color: textColor,
-                                cursor: "pointer",
-                                fontSize: 16,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                paddingBottom: 2,
-                            }}
-                            title={t("nodeDetail.nodeMenu.title")}
-                        >
-                            ⋮
-                        </button>
-
-                        {/* Menu lựa chọn của node (hiện khi ấn 3 chấm) */}
-                        {isNodeActionsOpen && (
-                            <div
-                                style={{
-                                    position: "absolute",
-                                    top: 44,
-                                    left: 80, // lệch sang phải 1 chút cho đẹp
-                                    minWidth: 200,
-                                    borderRadius: 14,
-                                    border: `1px solid ${cardBorder}`,
-                                    backgroundColor: popupBg,
-                                    boxShadow: "0 18px 30px rgba(15,23,42,0.45)",
-                                    padding: 8,
-                                    zIndex: 40,
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        fontSize: 12,
-                                        opacity: 0.7,
-                                        marginBottom: 6,
-                                    }}
-                                >
-                                    {t("nodeDetail.nodeMenu.header")}
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={handleReportFromMenu}
-                                    style={{
-                                        width: "100%",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                        padding: "6px 8px",
-                                        borderRadius: 10,
-                                        border: "none",
-                                        background: "transparent",
-                                        color: textColor,
-                                        fontSize: 13,
-                                        cursor: "pointer",
-                                    }}
-                                >
-                                    <span>{t("nodeDetail.nodeMenu.reportIncident")}</span>
-                                    <span style={{ fontSize: 12, opacity: 0.75 }}>⚠</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 16,
-                        position: "relative",
-                    }}
-                >
-                    <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 13, fontWeight: 500 }}>
-                            {user.username || t("nodeDetail.userDefault")}
-                        </div>
-                        <div style={{ fontSize: 11, opacity: 0.7 }}>{gmail}</div>
-                    </div>
-
-                    {/* Avatar + menu settings (Darkmode) */}
-                    <button
-                        type="button"
-                        onClick={() => setIsAvatarMenuOpen((v) => !v)}
-                        style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: "999px",
-                            border: `1px solid ${borderColor}`,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 14,
-                            fontWeight: 600,
-                            background: darkMode
-                                ? "radial-gradient(circle at 30% 0%, #38bdf8, #0f172a 70%)"
-                                : "radial-gradient(circle at 30% 0%, #38bdf8, #e5f2ff 70%)",
-                            color: darkMode ? "#e5e7eb" : "#0f172a",
-                            cursor: "pointer",
-                        }}
-                    >
-                        {avatarChar}
-                    </button>
-
-                    {isAvatarMenuOpen && (
-                        <div
-                            style={{
-                                position: "absolute",
-                                top: 44,
-                                right: 0,
-                                width: 240,
-                                borderRadius: 16,
-                                border: `1px solid ${cardBorder}`,
-                                backgroundColor: popupBg,
-                                boxShadow: "0 18px 30px rgba(15,23,42,0.4)",
-                                padding: 10,
-                                zIndex: 50,
-                            }}
-                        >
-                            <div
-                                style={{
-                                    fontSize: 12,
-                                    opacity: 0.7,
-                                    marginBottom: 8,
-                                }}
-                            >
-                                {t("nodeDetail.settings.header")}
-                            </div>
-
-                            {/* 🔹 Language switcher – nằm trên Dark mode */}
-                            <div
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    gap: 8,
-                                    padding: "6px 8px",
-                                    borderRadius: 10,
-                                    marginBottom: 6,
-                                }}
-                            >
-                                <span style={{ fontSize: 13 }}>
-                                    {t("dashboard.settings.language")}
-                                </span>
-                                <div
-                                    style={{
-                                        display: "inline-flex",
-                                        gap: 6,
-                                    }}
-                                >
-                                    {(["vi", "en"] as const).map((lng) => {
-                                        const isActive = currentLang === lng;
-                                        return (
-                                            <button
-                                                key={lng}
-                                                type="button"
-                                                onClick={() => handleChangeLanguage(lng)}
-                                                title={t(
-                                                    lng === "vi"
-                                                        ? "dashboard.settings.languageName.vi"
-                                                        : "dashboard.settings.languageName.en"
-                                                )}
-                                                style={{
-                                                    padding: "4px 10px",
-                                                    borderRadius: 999,
-                                                    border: isActive
-                                                        ? "none"
-                                                        : `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
-                                                    background: isActive
-                                                        ? "linear-gradient(135deg,#38bdf8,#6366f1)"
-                                                        : "transparent",
-                                                    color: isActive ? "#f9fafb" : textColor,
-                                                    fontSize: 11,
-                                                    fontWeight: 600,
-                                                    cursor: "pointer",
-                                                    textTransform: "uppercase",
-                                                    letterSpacing: 0.8,
-                                                }}
-                                            >
-                                                {lng.toUpperCase()}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Dark mode toggle */}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    onToggleDarkMode?.();
-                                }}
-                                style={{
-                                    width: "100%",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    gap: 8,
-                                    padding: "6px 8px",
-                                    borderRadius: 10,
-                                    border: "none",
-                                    backgroundColor: darkMode ? "rgba(15,23,42,0.7)" : "#f3f4f6",
-                                    cursor: "pointer",
-                                    color: textColor,
-                                    fontSize: 13,
-                                }}
-                            >
-                                <span>{t("nodeDetail.settings.darkMode")}</span>
-                                <span
-                                    style={{
-                                        width: 34,
-                                        height: 18,
-                                        borderRadius: 999,
-                                        backgroundColor: toggleBg,
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        padding: 2,
-                                        boxSizing: "border-box",
-                                        transition: "background-color 0.2s ease",
-                                    }}
-                                >
-                                    <span
-                                        style={{
-                                            width: 14,
-                                            height: 14,
-                                            borderRadius: 999,
-                                            backgroundColor: "#f9fafb",
-                                            transform: toggleKnobTransform,
-                                            transition: "transform 0.2s ease",
-                                        }}
-                                    />
-                                </span>
-                            </button>
-                        </div>
-                    )}
-
-                </div>
-            </header>
+            {/* HEADER tách riêng */}
+            <NodeDetailHeader
+                devAddrNum={devAddrNum}
+                user={user}
+                gmail={gmail}
+                darkMode={darkMode}
+                onBack={onBack}
+                onToggleDarkMode={onToggleDarkMode}
+                onReportIncident={openReportModal}
+            />
 
             {/* MAIN */}
             <main
@@ -521,7 +222,6 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                         </p>
                     </div>
 
-                    {/* Nút báo cáo sự cố: chỉ hiện khi WARNING */}
                     {isWarning && (
                         <button
                             type="button"
@@ -530,8 +230,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                 padding: "8px 16px",
                                 borderRadius: 999,
                                 border: "none",
-                                background:
-                                    "linear-gradient(135deg, #ef4444, #b91c1c)", // đỏ cảnh báo
+                                background: "linear-gradient(135deg, #ef4444, #b91c1c)",
                                 color: "#f9fafb",
                                 fontSize: 13,
                                 fontWeight: 600,
@@ -688,7 +387,7 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                         )}
                     </ChartCard>
 
-                    {/* Radiant temperature */}
+                    {/* MaxT */}
                     <ChartCard title={t("nodeDetail.charts.maxT")} darkMode={darkMode}>
                         {chartData.length === 0 ? (
                             <EmptyChartMessage />
@@ -877,7 +576,9 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
                                             {d.co2 != null ? `${d.co2} ppm` : "--"}
                                         </td>
                                         <td style={{ padding: "8px 12px" }}>
-                                            {d.temperature != null ? `${d.temperature}°C` : "--"}
+                                            {d.temperature != null
+                                                ? `${d.temperature}°C`
+                                                : "--"}
                                         </td>
                                         <td style={{ padding: "8px 12px" }}>
                                             {d.humidity != null ? `${d.humidity}%` : "--"}
@@ -908,215 +609,14 @@ const NodeDetailPage: React.FC<NodeDetailPageProps> = ({
             </main>
 
             {/* POPUP báo cáo sự cố */}
-            {isReportModalOpen && (
-                <div
-                    style={{
-                        position: "fixed",
-                        inset: 0,
-                        backgroundColor: "rgba(15,23,42,0.6)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 60,
-                    }}
-                    onClick={closeReportModal}
-                >
-                    <div
-                        style={{
-                            width: "100%",
-                            maxWidth: 380,
-                            backgroundColor: popupBg,
-                            borderRadius: 16,
-                            border: `1px solid ${cardBorder}`,
-                            boxShadow: "0 20px 40px rgba(15,23,42,0.9)",
-                            padding: 20,
-                            color: textColor,
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {!reportSent ? (
-                            <>
-                                <h2
-                                    style={{
-                                        fontSize: 18,
-                                        fontWeight: 600,
-                                        marginBottom: 10,
-                                    }}
-                                >
-                                    {t("nodeDetail.report.title", { devAddr: devAddrNum })}
-                                </h2>
-                                <p
-                                    style={{
-                                        fontSize: 13,
-                                        opacity: 0.8,
-                                        marginBottom: 16,
-                                    }}
-                                >
-                                    {t("nodeDetail.report.confirmText", { devAddr: devAddrNum })}
-                                </p>
-
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        justifyContent: "flex-end",
-                                        gap: 8,
-                                        marginTop: 8,
-                                    }}
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={closeReportModal}
-                                        style={{
-                                            padding: "8px 12px",
-                                            borderRadius: 999,
-                                            border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"
-                                                }`,
-                                            background: "transparent",
-                                            color: textColor,
-                                            fontSize: 12,
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        {t("nodeDetail.report.no")}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setReportSent(true)}
-                                        style={{
-                                            padding: "8px 14px",
-                                            borderRadius: 999,
-                                            border: "none",
-                                            background:
-                                                "linear-gradient(135deg,#ef4444,#b91c1c)",
-                                            color: "#f9fafb",
-                                            fontSize: 12,
-                                            fontWeight: 600,
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        {t("nodeDetail.report.yesSend")}
-                                    </button>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <h2
-                                    style={{
-                                        fontSize: 18,
-                                        fontWeight: 600,
-                                        marginBottom: 10,
-                                    }}
-                                >
-                                    {t("nodeDetail.report.sentTitle")}
-                                </h2>
-                                <p
-                                    style={{
-                                        fontSize: 13,
-                                        opacity: 0.8,
-                                        marginBottom: 16,
-                                    }}
-                                >
-                                    {t("nodeDetail.report.sentDescription", { devAddr: devAddrNum })}
-                                </p>
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        justifyContent: "flex-end",
-                                    }}
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={closeReportModal}
-                                        style={{
-                                            padding: "8px 14px",
-                                            borderRadius: 999,
-                                            border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"
-                                                }`,
-                                            background: "transparent",
-                                            color: textColor,
-                                            fontSize: 12,
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        {t("nodeDetail.report.close")}
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// Dùng key type-safe cho headers
-const HEADER_KEYS = {
-    battery: "battery",
-    co2: "co2",
-    temperature: "temperature",
-    humidity: "humidity",
-    maxT: "maxT",
-    fire: "fire",
-    timestamp: "timestamp",
-} as const;
-
-/** Card khung cho mỗi biểu đồ */
-const ChartCard: React.FC<{
-    title: string;
-    children: React.ReactNode;
-    darkMode?: boolean;
-}> = ({ title, children, darkMode = true }) => (
-    <div
-        style={{
-            borderRadius: 18,
-            border: `1px solid ${darkMode ? "#1f2937" : "#e5e7eb"}`,
-            background: darkMode
-                ? "radial-gradient(circle at 0 0, rgba(148,163,184,0.16), rgba(15,23,42,1))"
-                : "radial-gradient(circle at 0 0, rgba(148,163,184,0.12), #ffffff)",
-            padding: "12px 14px",
-            minHeight: 280,
-            display: "flex",
-            flexDirection: "column",
-        }}
-    >
-        <div
-            style={{
-                fontSize: 14,
-                fontWeight: 600,
-                marginBottom: 8,
-            }}
-        >
-            {title}
-        </div>
-        <div
-            style={{
-                flex: 1,
-                borderRadius: 12,
-                border: `1px dashed ${darkMode ? "rgba(148,163,184,0.3)" : "rgba(148,163,184,0.5)"
-                    }`,
-                padding: 8,
-            }}
-        >
-            {children}
-        </div>
-    </div>
-);
-
-const EmptyChartMessage: React.FC = () => {
-    const { t } = useTranslation();
-    return (
-        <div
-            style={{
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 12,
-                opacity: 0.6,
-            }}
-        >
-            {t("nodeDetail.charts.empty")}
+            <ReportIncidentModal
+                isOpen={isReportModalOpen}
+                reportSent={reportSent}
+                devAddrNum={devAddrNum}
+                darkMode={darkMode}
+                onClose={handleCloseReportModal}
+                onSend={handleSendReport}
+            />
         </div>
     );
 };
